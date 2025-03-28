@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -87,7 +88,7 @@ public class UserService {
     // update user
     public void updateUser(Long userId, UserPutDTO userPutDTO, String token) {
         User loginUser = userRepository.findByToken(token);
-        if (loginUser == null || loginUser.getId() != userId) {
+        if (loginUser == null || !Objects.equals(loginUser.getId(), userId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
         }
         User user= userRepository.findById(userId)

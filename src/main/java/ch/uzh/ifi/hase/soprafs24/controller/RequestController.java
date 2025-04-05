@@ -78,7 +78,7 @@ public class RequestController {
         requestService.deleteRequest(id);
     }
 
-    @PostMapping("/{id}/accept")
+    @PutMapping("/{id}/accept")
     @ResponseStatus(HttpStatus.OK)
     public void acceptRequest(@PathVariable Long id, @RequestParam Long volunteerId) {
         User volunteer = new User();
@@ -86,13 +86,13 @@ public class RequestController {
         requestService.acceptRequest(id, volunteer);
     }
 
-    @PostMapping("/{id}/complete")
+    @PutMapping("/{id}/complete")
     @ResponseStatus(HttpStatus.OK)
     public void completeRequest(@PathVariable Long id) {
         requestService.completeRequest(id);
     }
 
-    @PostMapping("/{id}/cancel")
+    @PutMapping("/{id}/cancel")
     @ResponseStatus(HttpStatus.OK)
     public void cancelRequest(@PathVariable Long id) {
         requestService.cancelRequest(id);

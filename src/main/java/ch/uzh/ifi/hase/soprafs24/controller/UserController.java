@@ -1,7 +1,10 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpHeaders;
@@ -21,16 +24,17 @@ import java.util.List;
  * UserService and finally return the result.
  */
 @RestController
+@RequestMapping("/users")
 public class UserController {
 
-    private final UserService userService;
     private static final String AUTH_HEADER = "Authorization";
+    private final UserService userService;
 
     UserController(UserService userService) {
         this.userService = userService;
     }
 
-    @GetMapping("/users")
+    @GetMapping
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public List<UserGetDTO> getAllUsers() {
@@ -45,7 +49,7 @@ public class UserController {
         return userGetDTOs;
     }
 
-    @PostMapping("/users")
+    @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserPostDTO userPostDTO) {
         try {
             // convert API user to internal representation
@@ -81,13 +85,14 @@ public class UserController {
             responseHeaders.set(AUTH_HEADER, token);
             UserGetDTO userGetDTO = DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
             return ResponseEntity.status(HttpStatus.OK).headers(responseHeaders).body(userGetDTO);
-        } catch (ResponseStatusException ex) {
+        }
+        catch (ResponseStatusException ex) {
             ErrorResponse errorResponse = new ErrorResponse(ex.getReason());
             return ResponseEntity.status(ex.getStatus()).body(errorResponse);
         }
     }
 
-    @GetMapping("/users/{userId}")
+    @GetMapping("/{userId}")
     public ResponseEntity<?> getUser(@PathVariable Long userId) {
         try {
             //get user
@@ -101,13 +106,14 @@ public class UserController {
         }
     }
 
-    @PutMapping("/users/{userId}")
+    @PutMapping("/{userId}")
     public ResponseEntity<?> updateUser(@PathVariable Long userId, @RequestBody UserPutDTO userPutDTO, @RequestHeader(AUTH_HEADER) String token) {
         try {
             //update user
             userService.updateUser(userId, userPutDTO, token);
             return ResponseEntity.noContent().build();
-        } catch (ResponseStatusException ex) {
+        }
+        catch (ResponseStatusException ex) {
             ErrorResponse errorResponse = new ErrorResponse(ex.getReason());
             return ResponseEntity.status(ex.getStatus()).body(errorResponse);
         }
@@ -127,7 +133,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/users/me")
+    @GetMapping("/me")
     public ResponseEntity<?> getUserMe(@RequestHeader(AUTH_HEADER) String token) {
         try {
             // get user by token to check if the user has the privilege to edit the profile
@@ -138,5 +144,18 @@ public class UserController {
             ErrorResponse errorResponse = new ErrorResponse(ex.getReason());
             return ResponseEntity.status(ex.getStatus()).body(errorResponse);
         }
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId, @RequestHeader(AUTH_HEADER) String token) {
+        try {
+            userService.deleteUser(userId, token);
+            return ResponseEntity.status(HttpStatus.OK).build();
+        }
+        catch (ResponseStatusException ex) {
+            ErrorResponse errorResponse = new ErrorResponse(ex.getReason());
+            return ResponseEntity.status(ex.getStatus()).body(errorResponse);
+        }
+
     }
 }

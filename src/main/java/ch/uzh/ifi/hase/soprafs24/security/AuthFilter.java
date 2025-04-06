@@ -12,20 +12,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+
 
 @Component
 public class AuthFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER = "Authorization";
     private final UserRepository userRepository;
-
-    // whitelist
-    private static final List<String> EXCLUDED_PATHS = Arrays.asList(
-            "/login", // login
-            "/h2-console",
-            "/favicon.ico"
-    );
 
     public AuthFilter(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -35,17 +27,17 @@ public class AuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
-        
-        if ("POST".equals(method) && "/users".equals(requestURI)) {
+
+        if (requestURI.equals("/") ||
+                (method.equals("POST") && requestURI.equals("/users")) ||
+                requestURI.startsWith("/users/login") ||
+                requestURI.startsWith("/ws") || // websocket
+                requestURI.startsWith("/h2-console") ||
+                requestURI.startsWith("/favicon.ico") ||
+                requestURI.startsWith("/api/messages/") ||
+                requestURI.startsWith("/messages")) {
             filterChain.doFilter(request, response);
             return;
-        }
-
-        for (String excludedPath : EXCLUDED_PATHS) {
-            if (requestURI.startsWith(excludedPath)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
         }
 
         String token = request.getHeader(AUTH_HEADER);

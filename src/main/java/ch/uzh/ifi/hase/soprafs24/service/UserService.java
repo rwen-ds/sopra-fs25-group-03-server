@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -45,6 +46,12 @@ public class UserService {
     public User createUser(User newUser) {
         // check user
         checkIfUserExists(newUser);
+        // check email
+        User userByEmail = userRepository.findByEmail(newUser.getEmail());
+        if (userByEmail != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "The email(" + newUser.getEmail() + ") already exists");
+        }
         // initialize
         newUser.setToken(UUID.randomUUID().toString());
         newUser.setStatus(UserStatus.ONLINE);
@@ -88,12 +95,12 @@ public class UserService {
     // update user
     public void updateUser(Long userId, UserPutDTO userPutDTO, String token) {
         User loginUser = userRepository.findByToken(token);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "The user with id: " + userId + " was not found"));
         if (loginUser == null || !Objects.equals(loginUser.getId(), userId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
         }
-        User user= userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "The user with id: " + userId + " was not found"));
         // update as we need
         // if the username is the same, do not change the username
         if (userPutDTO.getUsername() != null && !user.getUsername().equals(userPutDTO.getUsername())) {
@@ -113,23 +120,23 @@ public class UserService {
         }
 
         // if birthday is changed
-        if (userPutDTO.getBirthday() != null && !user.getBirthday().equals(userPutDTO.getBirthday())) {
+        if (userPutDTO.getBirthday() != null && user.getBirthday() != null && !user.getBirthday().equals(userPutDTO.getBirthday())) {
             user.setBirthday(userPutDTO.getBirthday());
         }
 
-        if (userPutDTO.getAge() != null && !user.getAge().equals(userPutDTO.getAge())) {
+        if (userPutDTO.getAge() != null && user.getAge() != null && !user.getAge().equals(userPutDTO.getAge())) {
             user.setAge(userPutDTO.getAge());
         }
 
-        if (userPutDTO.getGender() != null && !user.getGender().equals(userPutDTO.getGender())) {
+        if (userPutDTO.getGender() != null && user.getGender() != null && !user.getGender().equals(userPutDTO.getGender())) {
             user.setGender(userPutDTO.getGender());
         }
 
-        if (userPutDTO.getLanguage() != null && !user.getLanguage().equals(userPutDTO.getLanguage())) {
+        if (userPutDTO.getLanguage() != null && user.getLanguage() != null && !user.getLanguage().equals(userPutDTO.getLanguage())) {
             user.setLanguage(userPutDTO.getLanguage());
         }
 
-        if (userPutDTO.getSchool() != null && !user.getSchool().equals(userPutDTO.getSchool())) {
+        if (userPutDTO.getSchool() != null && user.getSchool() != null && !user.getSchool().equals(userPutDTO.getSchool())) {
             user.setSchool(userPutDTO.getSchool());
         }
 
@@ -180,5 +187,19 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid user");
         }
         return user;
+    }
+
+    public void deleteUser(Long userId, String token) {
+        User deleteUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "The user with id: " + userId + " was not found"));
+        User currentUser = userRepository.findByToken(token);
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
+        }
+        if (!Objects.equals(userId, currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
+        }
+        userRepository.delete(deleteUser);
     }
 }

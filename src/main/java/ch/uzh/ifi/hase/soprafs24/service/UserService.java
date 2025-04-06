@@ -120,23 +120,23 @@ public class UserService {
         }
 
         // if birthday is changed
-        if (userPutDTO.getBirthday() != null && user.getBirthday() != null && !user.getBirthday().equals(userPutDTO.getBirthday())) {
+        if (userPutDTO.getBirthday() != null) {
             user.setBirthday(userPutDTO.getBirthday());
         }
 
-        if (userPutDTO.getAge() != null && user.getAge() != null && !user.getAge().equals(userPutDTO.getAge())) {
+        if (userPutDTO.getAge() != null) {
             user.setAge(userPutDTO.getAge());
         }
 
-        if (userPutDTO.getGender() != null && user.getGender() != null && !user.getGender().equals(userPutDTO.getGender())) {
+        if (userPutDTO.getGender() != null) {
             user.setGender(userPutDTO.getGender());
         }
 
-        if (userPutDTO.getLanguage() != null && user.getLanguage() != null && !user.getLanguage().equals(userPutDTO.getLanguage())) {
+        if (userPutDTO.getLanguage() != null) {
             user.setLanguage(userPutDTO.getLanguage());
         }
 
-        if (userPutDTO.getSchool() != null && user.getSchool() != null && !user.getSchool().equals(userPutDTO.getSchool())) {
+        if (userPutDTO.getSchool() != null) {
             user.setSchool(userPutDTO.getSchool());
         }
 

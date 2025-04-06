@@ -108,22 +108,6 @@ public class User implements Serializable {
         this.birthday = birthday;
     }
 
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public UserStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(UserStatus status) {
-        this.status = status;
-    }
-
     public UserGender getGender() {
         return gender;
     }
@@ -154,5 +138,21 @@ public class User implements Serializable {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
     }
 }

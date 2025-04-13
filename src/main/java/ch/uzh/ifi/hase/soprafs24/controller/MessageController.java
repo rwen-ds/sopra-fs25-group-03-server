@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,12 +28,19 @@ public class MessageController {
         return messageService.sendMessage(message);
     }
 
-    @GetMapping("/api/messages/{senderId}/{recipientId}")
+    @PutMapping("/messages/{senderId}/{recipientId}")
     public ResponseEntity<List<Message>> getOfflineMessages(
             @PathVariable Long senderId,
             @PathVariable Long recipientId) {
         List<Message> messages = messageService.getAndMarkAsRead(senderId, recipientId);
 
+        return ResponseEntity.ok(messages);
+    }
+
+    @GetMapping("/messages/{senderId}/{recipientId}")
+    public ResponseEntity<List<Message>> getAllMessages(@PathVariable Long senderId,
+                                        @PathVariable Long recipientId) {
+        List<Message> messages =  messageService.getAllMessages(senderId, recipientId);
         return ResponseEntity.ok(messages);
     }
 }

@@ -2,8 +2,10 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
 import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +43,15 @@ public class MessageService {
             msg.setRead(true);
             messageRepository.save(msg);
         });
+        return messages;
+    }
+
+    public List<Message> getAllMessages(Long senderId, Long recipientId) {
+        List<Message> messages =  messageRepository.findBySenderIdAndRecipientId(senderId, recipientId);
+
+        if (messages.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No messages found between sender and recipient.");
+        }
 
         return messages;
     }

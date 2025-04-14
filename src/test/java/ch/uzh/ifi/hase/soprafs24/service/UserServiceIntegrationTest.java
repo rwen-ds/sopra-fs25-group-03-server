@@ -199,6 +199,7 @@ public class UserServiceIntegrationTest {
         newUser.setEmail("loginuser@example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
+        String oldToken = createdUser.getToken();
 
 
         userService.logout(createdUser.getToken());
@@ -213,7 +214,7 @@ public class UserServiceIntegrationTest {
 
         assertEquals(UserStatus.ONLINE, loggedInUser.getStatus());
         assertNotNull(loggedInUser.getToken());
-        assertNotEquals(createdUser.getToken(), loggedInUser.getToken(), "Should update token after login");
+        assertNotEquals(oldToken, loggedInUser.getToken(), "Should update token after login");
     }
 
     @Test

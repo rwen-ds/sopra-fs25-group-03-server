@@ -62,7 +62,7 @@ public class RequestRepositoryIntegrationTest {
         assertEquals("contact@example.com", testRequest.getContactInfo());
         assertEquals("Zurich", testRequest.getLocation());
         assertEquals("No feedback yet.", testRequest.getFeedback());
-        assertEquals(RequestStatus.ACCEPTING, testRequest.getStatus());
+        assertEquals(RequestStatus.WAITING, testRequest.getStatus());
         assertEquals(RequestEmergencyLevel.LOW, testRequest.getEmergencyLevel());
         assertEquals(LocalDate.now(), testRequest.getCreationDate());
         assertNotNull(testRequest.getPoster());

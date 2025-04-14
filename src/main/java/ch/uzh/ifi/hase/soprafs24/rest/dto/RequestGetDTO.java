@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
+import java.time.LocalDate;
+
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 
@@ -14,7 +16,7 @@ public class RequestGetDTO {
     private RequestStatus status;
     private RequestEmergencyLevel emergencyLevel;
     private String location;
-    private String creationDate;
+    private LocalDate creationDate;
     private Long posterId;
     private Long volunteerId;
 
@@ -66,11 +68,11 @@ public class RequestGetDTO {
         this.location = location;
     }
 
-    public String getCreationDate() {
+    public LocalDate getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public void setCreationDate(LocalDate creationDate) {
         this.creationDate = creationDate;
     }
 

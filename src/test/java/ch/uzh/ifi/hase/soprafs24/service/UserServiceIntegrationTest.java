@@ -213,7 +213,7 @@ public class UserServiceIntegrationTest {
 
         assertEquals(UserStatus.ONLINE, loggedInUser.getStatus());
         assertNotNull(loggedInUser.getToken());
-        assertNotEquals(createdUser.getToken(), loggedInUser.getToken(), "登录后应更新 token");
+        assertNotEquals(createdUser.getToken(), loggedInUser.getToken(), "Should update token after login");
     }
 
     @Test

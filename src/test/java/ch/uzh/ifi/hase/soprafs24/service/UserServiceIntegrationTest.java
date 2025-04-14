@@ -1,79 +1,3 @@
-// package ch.uzh.ifi.hase.soprafs24.service;
-
-// import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-// import ch.uzh.ifi.hase.soprafs24.entity.User;
-// import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.beans.factory.annotation.Qualifier;
-// import org.springframework.boot.test.context.SpringBootTest;
-// import org.springframework.test.context.web.WebAppConfiguration;
-// import org.springframework.web.server.ResponseStatusException;
-
-// import static org.junit.jupiter.api.Assertions.*;
-
-// /**
-//  * Test class for the UserResource REST resource.
-//  *
-//  * @see UserService
-//  */
-// @WebAppConfiguration
-// @SpringBootTest
-// public class UserServiceIntegrationTest {
-
-//   @Qualifier("userRepository")
-//   @Autowired
-//   private UserRepository userRepository;
-
-//   @Autowired
-//   private UserService userService;
-
-//   @BeforeEach
-//   public void setup() {
-//     userRepository.deleteAll();
-//   }
-
-// //  @Test
-// //  public void createUser_validInputs_success() {
-// //    // given
-// //    assertNull(userRepository.findByUsername("testUsername"));
-// //
-// //    User testUser = new User();
-// //    testUser.setUsername("testUsername");
-// //    testUser.setPassword("testPassword");
-// //
-// //    // when
-// //    User createdUser = userService.createUser(testUser);
-// //
-// //    // then
-// //    assertEquals(testUser.getId(), createdUser.getId());
-// //    assertEquals(testUser.getUsername(), createdUser.getUsername());
-// //    assertNotNull(createdUser.getToken());
-// //    assertEquals(UserStatus.OFFLINE, createdUser.getStatus());
-// //  }
-// //
-// //  @Test
-// //  public void createUser_duplicateUsername_throwsException() {
-// //    assertNull(userRepository.findByUsername("testUsername"));
-// //
-// //    User testUser = new User();
-// //    testUser.setUsername("testUsername");
-// //    testUser.setPassword("testPassword");
-// //    User createdUser = userService.createUser(testUser);
-// //
-// //    // attempt to create second user with same username
-// //    User testUser2 = new User();
-// //
-// //    // change the password but forget about the username
-// //    testUser2.setUsername("testUsername");
-// //    testUser2.setPassword("testPassword2");
-// //
-// //    // check that an error is thrown
-// //    assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));
-// //  }
-// }
-
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import java.time.LocalDate;
@@ -150,6 +74,44 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
+    public void testCreateUser_conflictUsername() {
+        User user1 = new User();
+        user1.setUsername("conflictUser");
+        user1.setEmail("unique1@example.com");
+        user1.setPassword("password");
+        userService.createUser(user1);
+
+        User user2 = new User();
+        user2.setUsername("conflictUser");
+        user2.setEmail("unique2@example.com");
+        user2.setPassword("password");
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.createUser(user2);
+        });
+        assertTrue(ex.getMessage().contains("already exists"), "Expected username conflict");
+    }
+
+    @Test
+    public void testCreateUser_conflictEmail() {
+        User user1 = new User();
+        user1.setUsername("uniqueUser1");
+        user1.setEmail("conflict@example.com");
+        user1.setPassword("password");
+        userService.createUser(user1);
+
+        User user2 = new User();
+        user2.setUsername("uniqueUser2");
+        user2.setEmail("conflict@example.com");
+        user2.setPassword("password");
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.createUser(user2);
+        });
+        assertTrue(ex.getMessage().contains("already exists"), "Expected email conflict");
+    }
+
+    @Test
     public void testGetUserByIdIntegration_success() {
         User newUser = new User();
         newUser.setUsername("getUser");
@@ -159,6 +121,74 @@ public class UserServiceIntegrationTest {
 
         User fetchedUser = userService.getUserById(createdUser.getId());
         assertEquals(createdUser.getId(), fetchedUser.getId());
+    }
+
+    @Test
+    public void testGetUserById_notFound() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.getUserById(999L);
+        });
+        assertTrue(ex.getMessage().contains("was not found"));
+    }
+
+    @Test
+    public void testUpdateUser_userNotFound() {
+        User user = new User();
+        user.setUsername("updateNonExist");
+        user.setEmail("updateNonExist@example.com");
+        user.setPassword("password");
+        User createdUser = userService.createUser(user);
+
+        ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
+        putDTO.setUsername("changedName");
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(9999L, putDTO, createdUser.getToken());
+        });
+        assertTrue(ex.getMessage().contains("was not found"));
+    }
+
+    @Test
+    public void testUpdateUser_conflictUsername() {
+        User userA = new User();
+        userA.setUsername("userA_conflict");
+        userA.setEmail("userA_conflict@example.com");
+        userA.setPassword("password");
+        User createdA = userService.createUser(userA);
+
+        User userB = new User();
+        userB.setUsername("userB_conflict");
+        userB.setEmail("userB_conflict@example.com");
+        userB.setPassword("password");
+        User createdB = userService.createUser(userB);
+
+        ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
+        putDTO.setUsername("userA_conflict");
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(createdB.getId(), putDTO, createdB.getToken());
+        });
+        assertTrue(ex.getMessage().contains("already exists"));
+    }
+
+    @Test
+    public void testUpdateUser_conflictEmail() {
+        User userA = new User();
+        userA.setUsername("userA_conflictEmail");
+        userA.setEmail("userA_conflictEmail@example.com");
+        userA.setPassword("password");
+        User createdA = userService.createUser(userA);
+
+        User userB = new User();
+        userB.setUsername("userB_conflictEmail");
+        userB.setEmail("userB_conflictEmail@example.com");
+        userB.setPassword("password");
+        User createdB = userService.createUser(userB);
+
+        ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
+        putDTO.setEmail("userA_conflictEmail@example.com");
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(createdB.getId(), putDTO, createdB.getToken());
+        });
+        assertTrue(ex.getMessage().contains("already exists"));
     }
 
     @Test
@@ -184,6 +214,52 @@ public class UserServiceIntegrationTest {
         assertEquals(UserStatus.ONLINE, loggedInUser.getStatus());
         assertNotNull(loggedInUser.getToken());
         assertNotEquals(createdUser.getToken(), loggedInUser.getToken(), "登录后应更新 token");
+    }
+
+    @Test
+    public void testLogin_userNotFound() {
+        User loginInput = new User();
+        loginInput.setUsername("nonExisting");
+        loginInput.setPassword("password");
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.login(loginInput);
+        });
+        assertTrue(ex.getMessage().contains("does not exist"));
+    }
+
+    @Test
+    public void testLogin_invalidPassword() {
+        User user = new User();
+        user.setUsername("loginTestUser");
+        user.setEmail("loginTest@example.com");
+        user.setPassword("correctPassword");
+        userService.createUser(user);
+
+        User loginInput = new User();
+        loginInput.setUsername("loginTestUser");
+        loginInput.setPassword("wrongPassword");
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.login(loginInput);
+        });
+        assertTrue(ex.getMessage().contains("Invalid password"));
+    }
+
+    @Test
+    public void testLogout_invalidToken() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.logout("nonExistingToken");
+        });
+        assertTrue(ex.getMessage().contains("Invalid token"));
+    }
+
+    @Test
+    public void testGetUserByToken_notFound() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.getUserByToken("nonExistingToken");
+        });
+        assertTrue(ex.getMessage().contains("Invalid user"));
     }
 
 
@@ -226,5 +302,63 @@ public class UserServiceIntegrationTest {
         User updatedUser = userService.getUserById(createdUser.getId());
         assertEquals("updatedUser", updatedUser.getUsername());
         assertEquals("updateduser@example.com", updatedUser.getEmail());
+    }
+
+    @Test
+    public void testDeleteUser_unauthorized() {
+        User userA = new User();
+        userA.setUsername("deleteUserA");
+        userA.setEmail("deleteUserA@example.com");
+        userA.setPassword("password");
+        User createdA = userService.createUser(userA);
+
+        User userB = new User();
+        userB.setUsername("deleteUserB");
+        userB.setEmail("deleteUserB@example.com");
+        userB.setPassword("password");
+        User createdB = userService.createUser(userB);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.deleteUser(createdA.getId(), createdB.getToken());
+        });
+        assertTrue(ex.getMessage().contains("unauthorized"));
+    }
+
+    @Test
+    public void testDeleteUser_userNotFound() {
+        User newUser = new User();
+        newUser.setUsername("nonExistDelete");
+        newUser.setEmail("nonExistDelete@example.com");
+        newUser.setPassword("password");
+        User createdUser = userService.createUser(newUser);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.deleteUser(9999L, createdUser.getToken());
+        });
+        assertTrue(ex.getMessage().contains("was not found"));
+    }
+
+    @Test
+    public void testUpdateUser_unauthorized() {
+        // 创建两个用户
+        User userA = new User();
+        userA.setUsername("userA");
+        userA.setEmail("userA@example.com");
+        userA.setPassword("password");
+        User createdA = userService.createUser(userA);
+
+        User userB = new User();
+        userB.setUsername("userB");
+        userB.setEmail("userB@example.com");
+        userB.setPassword("password");
+        User createdB = userService.createUser(userB);
+
+        // userB 尝试更新 userA 信息，token 不匹配
+        ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
+        putDTO.setUsername("newUsername");
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(createdA.getId(), putDTO, createdB.getToken());
+        });
+        assertTrue(ex.getMessage().contains("unauthorized"));
     }
 }

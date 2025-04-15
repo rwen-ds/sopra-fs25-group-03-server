@@ -13,8 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 @Service
 @Transactional
@@ -23,26 +23,38 @@ public class RequestService {
     private final Logger log = LoggerFactory.getLogger(RequestService.class);
 
     private final RequestRepository requestRepository;
+    private final UserRepository userRepository;
+    private final String adminToken = "adminToken"; // This should be replaced with a secure token management system
+
 
     @Autowired
-    public RequestService(RequestRepository requestRepository) {
+    public RequestService(RequestRepository requestRepository, UserRepository userRepository) {
         this.requestRepository = requestRepository;
+        this.userRepository = userRepository;
     }
 
-    public List<Request> getRequests() {
+    public List<Request> getRequests(String token) {
+        if (!token.equals(adminToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
         return this.requestRepository.findAll();
     }
 
-    public List<Request> getWaitingRequests() {
+    public List<Request> getWaitingRequests(String token) {
+        if (!token.equals(adminToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
         return this.requestRepository.findAll().stream()
             .filter(request -> request.getStatus() == RequestStatus.WAITING)
             .toList();
     }
 
-    public Request createRequest(Request newRequest) {
+    public Request createRequest(Request newRequest, Long userId) {
 
         newRequest.setStatus(RequestStatus.WAITING);
         newRequest.setCreationDate(LocalDate.now());
+        newRequest.setPoster(userRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + userId)));
 
         if (newRequest.getTitle() == null || newRequest.getTitle().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be empty");
@@ -53,12 +65,7 @@ public class RequestService {
         if (newRequest.getEmergencyLevel() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Emergency level must be set");
         }
-        if (newRequest.getPoster() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Poster must be set");
-        }
 
-        // saves the given entity but data is only persisted in the database once
-        // flush() is called
         newRequest = requestRepository.save(newRequest);
         requestRepository.flush();
 
@@ -72,8 +79,11 @@ public class RequestService {
         return request;
     }
 
-    public Request updateRequest(Long id, Request updatedRequest) {
+    public Request updateRequest(Long id, Request updatedRequest, String token) {
         Request existingRequest = getRequestById(id);
+        if (!token.equals(adminToken) || !existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
 
         if (updatedRequest.getTitle() != null) {
             existingRequest.setTitle(updatedRequest.getTitle());
@@ -96,29 +106,35 @@ public class RequestService {
         if (updatedRequest.getEmergencyLevel() != null) {
             existingRequest.setEmergencyLevel(updatedRequest.getEmergencyLevel());
         }
-        // volunteer is not updated here, as it should be set when a volunteer accepts the request
 
         requestRepository.save(existingRequest);
         return existingRequest;
     }
 
-    public void deleteRequest(Long id) {
-        Request request = getRequestById(id);
-        requestRepository.delete(request);
+    public void deleteRequest(Long id, String token) {
+        Request existingRequest = getRequestById(id);
+        if (!token.equals(adminToken) || !existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+        requestRepository.delete(existingRequest);
     }
 
-    public void acceptRequest(Long id, User volunteer) {
-        Request existingRequest = getRequestById(id);
+    public void acceptRequest(Long userId, Long volunteerId) {
+        Request existingRequest = getRequestById(userId);
         if (existingRequest.getStatus() != RequestStatus.WAITING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
         }
-        existingRequest.setVolunteer(volunteer);
+        existingRequest.setVolunteer(userRepository.findById(volunteerId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId)));
         existingRequest.setStatus(RequestStatus.ACCEPTING);
         requestRepository.save(existingRequest);
     }
 
-    public void completeRequest(Long id) {
+    public void completeRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
+        if (!existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
         if (existingRequest.getStatus() != RequestStatus.ACCEPTING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted requests can be completed");
         }
@@ -126,8 +142,11 @@ public class RequestService {
         requestRepository.save(existingRequest);
     }
 
-    public void cancelRequest(Long id) {
+    public void cancelRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
+        if (!existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
         if (existingRequest.getStatus() != RequestStatus.ACCEPTING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a request that isn't accepted");
         }

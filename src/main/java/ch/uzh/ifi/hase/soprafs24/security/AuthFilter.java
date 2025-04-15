@@ -37,6 +37,7 @@ public class AuthFilter extends OncePerRequestFilter {
 
         if (requestURI.equals("/") ||
                 (method.equals("POST") && requestURI.equals("/users")) ||
+                requestURI.startsWith("/users/login") ||
                 requestURI.startsWith("/translate") ||
                 requestURI.startsWith("/ws") || // websocket
                 requestURI.startsWith("/h2-console") ||

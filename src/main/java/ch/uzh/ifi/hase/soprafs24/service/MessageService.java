@@ -49,10 +49,11 @@ public class MessageService {
     public List<Message> getAllMessages(Long senderId, Long recipientId) {
         List<Message> messages =  messageRepository.findBySenderIdAndRecipientId(senderId, recipientId);
 
-        if (messages.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No messages found between sender and recipient.");
-        }
-
         return messages;
     }
+
+    public List<Message> getConversation(Long senderId, Long recipientId) {
+        return messageRepository.findConversation(senderId, recipientId);
+    }
+
 }

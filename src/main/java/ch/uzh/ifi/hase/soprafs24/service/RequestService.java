@@ -1,8 +1,11 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDate;
-import java.util.List;
-
+import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Request;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Transactional
 public class RequestService {
-    
+
     private final Logger log = LoggerFactory.getLogger(RequestService.class);
 
     private final RequestRepository requestRepository;
@@ -45,8 +47,8 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
         return this.requestRepository.findAll().stream()
-            .filter(request -> request.getStatus() == RequestStatus.WAITING)
-            .toList();
+                .filter(request -> request.getStatus() == RequestStatus.WAITING)
+                .toList();
     }
 
     public Request createRequest(Request newRequest, Long userId) {
@@ -54,7 +56,7 @@ public class RequestService {
         newRequest.setStatus(RequestStatus.WAITING);
         newRequest.setCreationDate(LocalDate.now());
         newRequest.setPoster(userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + userId)));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + userId)));
 
         if (newRequest.getTitle() == null || newRequest.getTitle().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be empty");
@@ -75,7 +77,7 @@ public class RequestService {
 
     public Request getRequestById(Long id) {
         Request request = requestRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found with id: " + id));
         return request;
     }
 
@@ -121,18 +123,18 @@ public class RequestService {
 
     public void acceptRequest(Long userId, Long volunteerId) {
         Request existingRequest = getRequestById(userId);
-        if (existingRequest.getStatus() != RequestStatus.WAITING) {
+        if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
         }
         existingRequest.setVolunteer(userRepository.findById(volunteerId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId)));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId)));
         existingRequest.setStatus(RequestStatus.ACCEPTING);
         requestRepository.save(existingRequest);
     }
 
     public void completeRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
-        if (!existingRequest.getPoster().getToken().equals(token)) {
+        if (!existingRequest.getVolunteer().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
         if (existingRequest.getStatus() != RequestStatus.ACCEPTING) {
@@ -154,5 +156,86 @@ public class RequestService {
         requestRepository.save(existingRequest);
     }
 
+    public List<Request> getRequestByPosterId(Long posterId) {
+        List<Request> requests = requestRepository.findByPosterId(posterId);
+        return requests;
+    }
 
+    public List<NotificationDTO> getNotifications(User user) {
+        List<NotificationDTO> notifications = new ArrayList<>();
+        List<Request> postedRequests = requestRepository.findByPoster(user);
+        for (Request request : postedRequests) {
+            if (request.getStatus() == RequestStatus.VOLUNTEERED && request.getVolunteer() != null) {
+                notifications.add(new NotificationDTO(
+                        RequestStatus.VOLUNTEERED,
+                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request '" + request.getTitle() + "'",
+                        request.getId(),
+                        user.getId(),
+                        request.getVolunteer().getId(),
+                        request.getTitle()
+                ));
+            }
+            else if (request.getStatus() == RequestStatus.COMPLETED && request.getVolunteer() != null) {
+                notifications.add(new NotificationDTO(
+                        RequestStatus.COMPLETED,
+                        "Your request '" + request.getTitle() + "' is completed by volunteer " + request.getVolunteer().getUsername() + "!",
+                        request.getId(),
+                        user.getId(),
+                        request.getVolunteer().getId(),
+                        request.getTitle()
+                ));
+            }
+        }
+
+        List<Request> volunteeredRequests = requestRepository.findByVolunteer(user);
+        for (Request request : volunteeredRequests) {
+            if (request.getStatus() == RequestStatus.ACCEPTING) {
+                notifications.add(new NotificationDTO(
+                        RequestStatus.ACCEPTING,
+                        "Your volunteer for request '" + request.getTitle() + "' is accepted!",
+                        request.getId(),
+                        request.getPoster().getId(),
+                        user.getId(),
+                        request.getTitle()
+                ));
+            }
+        }
+        return notifications;
+    }
+
+    public List<Request> getActiveRequests() {
+        List<Request> waitingRequests = requestRepository.findByStatus(RequestStatus.WAITING);
+
+        return waitingRequests;
+    }
+
+    public void volunteerRequest(Request request, User volunteer) {
+        request.setVolunteer(volunteer);
+        request.setStatus(RequestStatus.VOLUNTEERED);
+        requestRepository.save(request);
+    }
+
+    public void markRequestAsDone(Long requestId, String token) {
+        Request existingRequest = getRequestById(requestId);
+        if (!existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+        if (existingRequest.getStatus() != RequestStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only completed requests can be mark as done");
+        }
+        existingRequest.setStatus(RequestStatus.DONE);
+        requestRepository.save(existingRequest);
+    }
+
+    public void feedback(Long requestId, String token, String feedback) {
+        Request existingRequest = getRequestById(requestId);
+        if (!existingRequest.getPoster().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+        if (existingRequest.getStatus() != RequestStatus.DONE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests be marked as done can be feedback");
+        }
+        existingRequest.setFeedback(feedback);
+        requestRepository.save(existingRequest);
+    }
 }

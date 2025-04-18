@@ -65,6 +65,21 @@ public class RequestServiceTest {
         request.setPoster(poster);
         return request;
     }
+
+    private Request createSampleRequest(Long id, String title, RequestStatus status, User poster, User volunteer) {
+        Request request = new Request();
+        request.setId(id);
+        request.setTitle(title);
+        request.setDescription("Sample description");
+        request.setContactInfo("sample@example.com");
+        request.setLocation("Sample location");
+        request.setCreationDate(LocalDate.now());
+        request.setStatus(status);
+        request.setEmergencyLevel(RequestEmergencyLevel.LOW);
+        request.setPoster(poster);
+        request.setVolunteer(volunteer);
+        return request;
+    }
     
     @Test
     public void testCreateRequest_success() {
@@ -181,7 +196,7 @@ public class RequestServiceTest {
     @Test
     public void testAcceptRequest_success() {
 
-        Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, createSampleUser(100L, "posterUser", adminToken));
+        Request request = createSampleRequest(1L, "Title", RequestStatus.VOLUNTEERED, createSampleUser(100L, "posterUser", adminToken));
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
@@ -210,22 +225,24 @@ public class RequestServiceTest {
     @Test
     public void testCompleteRequest_success() {
         User poster = createSampleUser(100L, "posterUser", adminToken);
-        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster);
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
-        requestService.completeRequest(1L, adminToken);
+        requestService.completeRequest(1L, "volunteerToken");
         assertEquals(RequestStatus.COMPLETED, request.getStatus());
     }
     
     @Test
     public void testCompleteRequest_invalidStatus_throwsBadRequest() {
         User poster = createSampleUser(100L, "posterUser", adminToken);
-        Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            requestService.completeRequest(1L, adminToken);
+            requestService.completeRequest(1L, "volunteerToken");
         });
         assertTrue(exception.getMessage().contains("Only accepted requests can be completed"));
     }

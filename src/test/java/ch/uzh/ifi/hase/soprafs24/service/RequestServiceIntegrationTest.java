@@ -58,6 +58,19 @@ public class RequestServiceIntegrationTest {
         return request;
     }
 
+    private Request createRequest(String title, RequestStatus status, User poster, User volunteer) {
+        Request request = new Request();
+        request.setTitle(title);
+        request.setDescription("Integration test description");
+        request.setEmergencyLevel(RequestEmergencyLevel.LOW);
+        request.setStatus(status);
+        request.setCreationDate(LocalDate.now());
+        request.setPoster(poster);
+        request.setVolunteer(volunteer);
+        requestRepository.save(request);
+        return request;
+    }
+
     @Test
     public void createAndRetrieveRequest_success() {
         User poster = createUser("poster", adminToken);
@@ -117,7 +130,7 @@ public class RequestServiceIntegrationTest {
     public void acceptRequest_validScenario_success() {
         User poster = createUser("poster", adminToken);
         User volunteer = createUser("volunteer", "volunteerToken");
-        Request request = createRequest("Need Help", RequestStatus.WAITING, poster);
+        Request request = createRequest("Need Help", RequestStatus.VOLUNTEERED, poster);
 
         requestService.acceptRequest(request.getId(), volunteer.getId());
 
@@ -129,9 +142,10 @@ public class RequestServiceIntegrationTest {
     @Test
     public void completeRequest_validScenario_success() {
         User poster = createUser("poster", adminToken);
-        Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster);
+        User volunteer = createUser("volunteer", "volunteerToken");
+        Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster, volunteer);
 
-        requestService.completeRequest(request.getId(), adminToken);
+        requestService.completeRequest(request.getId(), "volunteerToken");
 
         Request completedRequest = requestService.getRequestById(request.getId());
         assertEquals(RequestStatus.COMPLETED, completedRequest.getStatus());
@@ -172,7 +186,8 @@ public class RequestServiceIntegrationTest {
     @Test
     public void completeRequest_invalidToken_throwsUnauthorized() {
         User poster = createUser("poster", adminToken);
-        Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster);
+        User volunteer = createUser("volunteer", "volunteerToken");
+        Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster, volunteer);
 
         assertThrows(ResponseStatusException.class, () -> {
             requestService.completeRequest(request.getId(), "wrongToken");

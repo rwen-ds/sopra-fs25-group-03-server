@@ -1,23 +1,18 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDate;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import java.time.LocalDate;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @SpringBootTest
@@ -32,8 +27,8 @@ public class UserServiceIntegrationTest {
 
 
     @Test
-    public void testGetUsersIntegration_success(){
-        
+    public void testGetUsersIntegration_success() {
+
         User user1 = new User();
         user1.setUsername("integrationUser1");
         user1.setEmail("integration1@example.com");
@@ -48,8 +43,9 @@ public class UserServiceIntegrationTest {
 
         var users = userService.getUsers();
         assertEquals(2, users.size());
-        
+
     }
+
     @Test
     public void testCreateUserIntegration_success() {
 
@@ -297,7 +293,6 @@ public class UserServiceIntegrationTest {
         userPutDTO.setEmail("updateduser@example.com");
 
 
-
         userService.updateUser(createdUser.getId(), userPutDTO, createdUser.getToken());
 
         User updatedUser = userService.getUserById(createdUser.getId());
@@ -341,7 +336,7 @@ public class UserServiceIntegrationTest {
 
     @Test
     public void testUpdateUser_unauthorized() {
-        // 创建两个用户
+        // create two users
         User userA = new User();
         userA.setUsername("userA");
         userA.setEmail("userA@example.com");
@@ -354,7 +349,7 @@ public class UserServiceIntegrationTest {
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
-        // userB 尝试更新 userA 信息，token 不匹配
+        // userB try to update information of userA, token is not matched
         ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
         putDTO.setUsername("newUsername");
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {

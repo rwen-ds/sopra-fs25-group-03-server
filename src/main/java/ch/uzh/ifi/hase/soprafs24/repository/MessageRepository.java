@@ -12,12 +12,25 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findBySenderIdAndRecipientIdAndIsReadFalse(Long senderId, Long recipientId);
 
-    List<Message> findBySenderIdAndRecipientId(Long senderId, Long recipientId);
-
     @Query("SELECT m FROM Message m " +
             "WHERE (m.senderId = :senderId AND m.recipientId = :recipientId) " +
             "   OR (m.senderId = :recipientId AND m.recipientId = :senderId) " +
             "ORDER BY m.timestamp ASC")
     List<Message> findConversation(@Param("senderId") Long senderId,
                                    @Param("recipientId") Long recipientId);
+
+    @Query("SELECT DISTINCT " +
+            "CASE WHEN m.senderId = :userId THEN m.recipientId ELSE m.senderId END " +
+            "FROM Message m " +
+            "WHERE m.senderId = :userId OR m.recipientId = :userId")
+    List<Long> findDistinctChatPartnerIds(@Param("userId") Long userId);
+
+    @Query("SELECT m FROM Message m " +
+            "WHERE (m.senderId = :userId1 AND m.recipientId = :userId2) " +
+            "   OR (m.senderId = :userId2 AND m.recipientId = :userId1) " +
+            "ORDER BY m.timestamp DESC")
+    Message findTopByUserPairOrderByTimestampDesc(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+
+    List<Message> findBySenderIdAndRecipientId(Long senderId, Long recipientId);
 }

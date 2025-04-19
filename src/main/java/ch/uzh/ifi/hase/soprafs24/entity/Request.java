@@ -9,7 +9,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
@@ -54,7 +53,7 @@ public class Request implements Serializable {
     @Column(nullable = false, name = "creation_date")
     private LocalDate creationDate;
     
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "posterId", nullable = false)
     private User poster;
 

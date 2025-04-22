@@ -71,7 +71,8 @@ public class MessageService {
             if (user == null) continue;
 
             // get the last message
-            Message lastMessage = messageRepository.findTopByUserPairOrderByTimestampDesc(userId, partnerId);
+            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(userId, partnerId);
+            Message lastMessage = messages.isEmpty() ? null : messages.get(0);
             String preview = lastMessage != null ? lastMessage.getContent() : null;
 
             contactDTOs.add(new ContactDTO(user.getId(), user.getUsername(), preview));

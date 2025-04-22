@@ -48,13 +48,6 @@ public class MessageController {
         return ResponseEntity.ok(conversation);
     }
 
-    @GetMapping("/messages/{senderId}/{recipientId}")
-    public ResponseEntity<List<Message>> getAllMessages(@PathVariable Long senderId,
-                                                        @PathVariable Long recipientId) {
-        List<Message> messages =  messageService.getAllMessages(senderId, recipientId);
-        return ResponseEntity.ok(messages);
-    }
-
     @GetMapping("/messages/contacts")
     public ResponseEntity<List<ContactDTO>> getChatContacts(@RequestHeader(AUTH_HEADER) String token){
         User user = userService.getUserByToken(token);

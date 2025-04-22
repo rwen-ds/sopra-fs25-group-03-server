@@ -20,13 +20,14 @@ import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
-    @Autowired
-    private UserRepository userRepository;
 
+    private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public MessageService(MessageRepository messageRepository, SimpMessagingTemplate messagingTemplate) {
+    @Autowired
+    public MessageService(UserRepository userRepository, MessageRepository messageRepository, SimpMessagingTemplate messagingTemplate) {
+        this.userRepository = userRepository;
         this.messageRepository = messageRepository;
         this.messagingTemplate = messagingTemplate;
     }
@@ -54,12 +55,6 @@ public class MessageService {
             msg.setRead(true);
             messageRepository.save(msg);
         });
-        return messages;
-    }
-
-    public List<Message> getAllMessages(Long senderId, Long recipientId) {
-        List<Message> messages =  messageRepository.findBySenderIdAndRecipientId(senderId, recipientId);
-
         return messages;
     }
 

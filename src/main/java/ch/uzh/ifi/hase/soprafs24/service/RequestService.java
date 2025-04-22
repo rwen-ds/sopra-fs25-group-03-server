@@ -83,7 +83,7 @@ public class RequestService {
 
     public Request updateRequest(Long id, Request updatedRequest, String token) {
         Request existingRequest = getRequestById(id);
-        if (!token.equals(adminToken) || !existingRequest.getPoster().getToken().equals(token)) {
+        if (!token.equals(adminToken) && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
 
@@ -115,7 +115,7 @@ public class RequestService {
 
     public void deleteRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
-        if (!token.equals(adminToken) || !existingRequest.getPoster().getToken().equals(token)) {
+        if (!token.equals(adminToken) && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
         requestRepository.delete(existingRequest);

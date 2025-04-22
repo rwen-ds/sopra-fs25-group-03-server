@@ -31,6 +31,4 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             "ORDER BY m.timestamp DESC")
     Message findTopByUserPairOrderByTimestampDesc(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
-
-    List<Message> findBySenderIdAndRecipientId(Long senderId, Long recipientId);
 }

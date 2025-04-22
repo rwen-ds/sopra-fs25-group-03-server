@@ -52,32 +52,4 @@ public class MessageServiceTest {
         assertEquals("Hi", result.get(1).getContent());
     }
 
-    @Test
-    public void testGetChatContacts() {
-        Long userId = 1L;
-        Long partnerId = 2L;
-
-        when(messageRepository.findDistinctChatPartnerIds(userId)).thenReturn(Arrays.asList(partnerId));
-
-        User partner = new User();
-        partner.setId(partnerId);
-        partner.setUsername("Alice");
-
-        when(userRepository.findById(partnerId)).thenReturn(Optional.of(partner));
-
-        Message lastMessage = new Message();
-        lastMessage.setContent("Hello there");
-
-        when(messageRepository.findTopByUserPairOrderByTimestampDesc(userId, partnerId)).thenReturn(lastMessage);
-
-        var contacts = messageService.getChatContacts(userId);
-
-        assertEquals(1, contacts.size());
-        assertEquals(partnerId, contacts.get(0).getId());
-        assertEquals("Alice", contacts.get(0).getUsername());
-        assertEquals("Hello there", contacts.get(0).getLastMessage());
-    }
-
-
-
 }

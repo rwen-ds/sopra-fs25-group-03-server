@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import java.time.LocalDate;
 import java.util.Collections;
 
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,7 +34,7 @@ import ch.uzh.ifi.hase.soprafs24.service.RequestService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 
 @WebMvcTest(RequestController.class)
-@AutoConfigureMockMvc(addFilters = false)  // 关闭 Security 过滤器
+@AutoConfigureMockMvc(addFilters = false)  // close Filter
 public class RequestControllerTest {
 
     private static final String AUTH_HEADER = "Authorization";
@@ -50,11 +51,14 @@ public class RequestControllerTest {
     @MockBean
     private AuthFilter authFilter;
 
+    @MockBean
+    private UserRepository userRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     /**
-     * 将对象转为 JSON 字符串
+     * to Json
      */
     private String asJsonString(final Object obj) {
         try {
@@ -67,16 +71,13 @@ public class RequestControllerTest {
 
     @Test
     void createRequest_success() throws Exception {
-        // 准备请求体
         RequestPostDTO dto = new RequestPostDTO();
         dto.setTitle("Test Title");
         dto.setDescription("Test Description");
 
-        // Service 层返回的 Request
         Request created = new Request();
         created.setId(1L);
 
-        // 当 service.createRequest(...) 时，返回 created
         when(requestService.createRequest(any(Request.class), eq(1L))).thenReturn(created);
 
         mockMvc.perform(post("/requests?posterId=1")
@@ -103,12 +104,10 @@ public class RequestControllerTest {
 
     @Test
     void updateRequest_success() throws Exception {
-        // 准备请求体
         RequestPostDTO dto = new RequestPostDTO();
         dto.setTitle("Updated Title");
         dto.setDescription("Updated Desc");
 
-        // Service 返回更新后的对象
         Request updated = new Request();
         updated.setId(1L);
         updated.setTitle("Updated Title");

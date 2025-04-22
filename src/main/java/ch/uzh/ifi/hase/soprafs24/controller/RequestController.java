@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
@@ -22,10 +23,12 @@ public class RequestController {
     private static final String AUTH_HEADER = "Authorization";
     private final RequestService requestService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public RequestController(RequestService requestService, UserService userService) {
+    public RequestController(RequestService requestService, UserService userService, UserRepository userRepository) {
         this.requestService = requestService;
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -138,11 +141,13 @@ public class RequestController {
     //     }
     // }
 
-    @GetMapping("/my/{posterId}")
-    public List<RequestGetDTO> getRequestByPosterId(@PathVariable Long posterId) {
+    @GetMapping("/me")
+    public List<RequestGetDTO> getRequestByPosterId(@RequestHeader(AUTH_HEADER) String token) {
+
+        User user = userRepository.findByToken(token);
 
         List<RequestGetDTO> requestGetDTOs = new ArrayList<>();
-        List<Request> requests = requestService.getRequestByPosterId(posterId);
+        List<Request> requests = requestService.getRequestByPoster(user);
 
         // convert each user to the API representation
         for (Request request : requests) {

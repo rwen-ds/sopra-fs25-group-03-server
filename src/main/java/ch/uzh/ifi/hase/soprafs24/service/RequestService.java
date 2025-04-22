@@ -156,10 +156,6 @@ public class RequestService {
         requestRepository.save(existingRequest);
     }
 
-    public List<Request> getRequestByPosterId(Long posterId) {
-        List<Request> requests = requestRepository.findByPosterId(posterId);
-        return requests;
-    }
 
     public List<NotificationDTO> getNotifications(User user) {
         List<NotificationDTO> notifications = new ArrayList<>();
@@ -237,5 +233,9 @@ public class RequestService {
         }
         existingRequest.setFeedback(feedback);
         requestRepository.save(existingRequest);
+    }
+
+    public List<Request> getRequestByPoster(User user) {
+        return requestRepository.findByPoster(user);
     }
 }

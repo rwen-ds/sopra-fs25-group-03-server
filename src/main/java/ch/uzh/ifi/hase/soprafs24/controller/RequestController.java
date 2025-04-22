@@ -156,7 +156,7 @@ public class RequestController {
         return requestGetDTOs;
     }
 
-    @PutMapping("/volunteer/{requestId}")
+    @PutMapping("/{requestId}/volunteer")
     public ResponseEntity<?> volunteer(@PathVariable Long requestId, @RequestHeader(AUTH_HEADER) String token) {
         try {
             Request request = requestService.getRequestById(requestId);

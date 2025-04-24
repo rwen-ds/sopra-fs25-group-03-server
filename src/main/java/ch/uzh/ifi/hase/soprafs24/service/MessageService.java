@@ -8,38 +8,43 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MessageService {
 
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+//    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public MessageService(UserRepository userRepository, MessageRepository messageRepository, SimpMessagingTemplate messagingTemplate) {
+    public MessageService(UserRepository userRepository, MessageRepository messageRepository) {
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
-        this.messagingTemplate = messagingTemplate;
+//        this.messagingTemplate = messagingTemplate;
     }
 
-    public Message sendMessage(Message message) {
-        message.setTimestamp(LocalDateTime.now());
-        message.setRead(false);
-        messageRepository.save(message);
+    private final Map<Long, DeferredResult<String>> waitingUsers = new ConcurrentHashMap<>();
 
-        // Send to recipient if online
-        messagingTemplate.convertAndSend(
-                "/topic/messages/" + message.getRecipientId(),
-                message
-        );
-
-        return message;
-    }
+//    public Message sendMessage(Message message) {
+//        message.setTimestamp(LocalDateTime.now());
+//        message.setRead(false);
+//        messageRepository.save(message);
+//
+//        // Send to recipient if online
+//        messagingTemplate.convertAndSend(
+//                "/topic/messages/" + message.getRecipientId(),
+//                message
+//        );
+//
+//        return message;
+//    }
 
     public List<Message> getAndMarkAsRead(Long senderId, Long recipientId) {
         List<Message> messages = messageRepository
@@ -76,4 +81,25 @@ public class MessageService {
         return contactDTOs;
     }
 
+    public void chat(Message message) {
+        message.setTimestamp(LocalDateTime.now());
+        message.setRead(false);
+        messageRepository.save(message);
+
+        DeferredResult<String> waiting = waitingUsers.get(message.getRecipientId());
+        if (waiting != null) {
+            waiting.setResult(message.getSenderId() + ":" + message.getContent());
+        }
+    }
+
+    public DeferredResult<String> poll(Long userId) {
+        DeferredResult<String> result = new DeferredResult<>(30000L, "timeout");
+
+        waitingUsers.put(userId, result);
+
+        result.onCompletion(() -> waitingUsers.remove(userId));
+        result.onTimeout(() -> waitingUsers.remove(userId));
+
+        return result;
+    }
 }

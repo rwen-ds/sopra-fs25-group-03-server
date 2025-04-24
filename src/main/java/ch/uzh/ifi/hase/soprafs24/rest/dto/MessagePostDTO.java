@@ -1,36 +1,15 @@
-package ch.uzh.ifi.hase.soprafs24.entity;
+package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import java.io.Serializable;
+
 import java.time.LocalDateTime;
-import javax.persistence.*;
 
-@Entity
-@Table(name = "MESSAGE")
-public class Message implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    @Id
-    @GeneratedValue
-    private Long id;
-
+public class MessagePostDTO {
     private Long senderId;
     private Long recipientId;
     private String content;
     private LocalDateTime timestamp;
-    private boolean isRead;
 
-    public Message() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public MessagePostDTO() {
     }
 
     public Long getSenderId() {
@@ -63,13 +42,5 @@ public class Message implements Serializable {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public boolean isRead() {
-        return isRead;
-    }
-
-    public void setRead(boolean read) {
-        isRead = read;
     }
 }

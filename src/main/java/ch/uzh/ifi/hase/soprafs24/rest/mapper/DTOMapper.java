@@ -1,15 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
+import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.entity.Message;
 
 /**
  * DTOMapper
@@ -61,4 +59,11 @@ public interface DTOMapper {
   @Mapping(source = "poster.id", target = "posterId")
   @Mapping(source = "volunteer.id", target = "volunteerId")
   RequestGetDTO convertEntityToRequestGetDTO(Request request);
+
+    @Mapping(source = "senderId", target = "senderId")
+    @Mapping(source = "recipientId", target = "recipientId")
+    @Mapping(source = "content", target = "content")
+    @Mapping(source = "timestamp", target = "timestamp")
+    Message convertMessagePostDTOtoEntity(MessagePostDTO messagePostDTO);
+
 }

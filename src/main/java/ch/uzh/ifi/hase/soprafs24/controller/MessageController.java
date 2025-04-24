@@ -3,7 +3,10 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.MessagePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.MessageService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +14,11 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 public class MessageController {
@@ -26,11 +32,12 @@ public class MessageController {
         this.userService = userService;
     }
 
-    @MessageMapping("/chat.send")
-    @SendToUser("/queue/messages")
-    public Message sendMessage(@Payload Message message) {
-        return messageService.sendMessage(message);
-    }
+
+//    @MessageMapping("/chat.send")
+//    @SendToUser("/queue/messages")
+//    public Message sendMessage(@Payload Message message) {
+//        return messageService.sendMessage(message);
+//    }
 
     @PutMapping("/messages/{senderId}/{recipientId}")
     public ResponseEntity<List<Message>> getOfflineMessages(
@@ -54,4 +61,19 @@ public class MessageController {
         List<ContactDTO> contacts = messageService.getChatContacts(user.getId());
         return ResponseEntity.ok(contacts);
     }
+
+    @GetMapping("/poll/{userId}")
+    public DeferredResult<String> poll(@PathVariable Long userId) {
+        return messageService.poll(userId);
+    }
+
+    @PostMapping("/messages/send")
+    public String chat(@RequestBody MessagePostDTO messagePostDTO) {
+        Message message = DTOMapper.INSTANCE.convertMessagePostDTOtoEntity(messagePostDTO);
+        messageService.chat(message);
+
+        return "sent";
+    }
+
+
 }

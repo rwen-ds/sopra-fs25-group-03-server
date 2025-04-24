@@ -6,7 +6,6 @@ import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 
@@ -21,30 +20,14 @@ public class MessageService {
 
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
-//    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     public MessageService(UserRepository userRepository, MessageRepository messageRepository) {
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
-//        this.messagingTemplate = messagingTemplate;
     }
 
     private final Map<Long, DeferredResult<String>> waitingUsers = new ConcurrentHashMap<>();
-
-//    public Message sendMessage(Message message) {
-//        message.setTimestamp(LocalDateTime.now());
-//        message.setRead(false);
-//        messageRepository.save(message);
-//
-//        // Send to recipient if online
-//        messagingTemplate.convertAndSend(
-//                "/topic/messages/" + message.getRecipientId(),
-//                message
-//        );
-//
-//        return message;
-//    }
 
     public List<Message> getAndMarkAsRead(Long senderId, Long recipientId) {
         List<Message> messages = messageRepository

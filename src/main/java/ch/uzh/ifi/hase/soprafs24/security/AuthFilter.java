@@ -42,7 +42,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/translate") ||
                 requestURI.startsWith("/h2-console") ||
                 requestURI.startsWith("/favicon.ico") ||
-                requestURI.startsWith("/requests") ||
+//                requestURI.startsWith("/requests") ||
                 requestURI.startsWith("/messages")) {
             filterChain.doFilter(request, response);
             return;

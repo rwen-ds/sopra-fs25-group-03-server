@@ -26,6 +26,7 @@ public class AppConfig {
                 adminUser.setToken(UUID.randomUUID().toString());
                 adminUser.setIsAdmin(true); // Set this user as an admin
 
+
                 // Save the user to the repository
                 userRepository.save(adminUser);
             }

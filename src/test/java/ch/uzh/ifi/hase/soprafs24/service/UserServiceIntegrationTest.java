@@ -42,7 +42,7 @@ public class UserServiceIntegrationTest {
         userService.createUser(user2);
 
         var users = userService.getUsers();
-        assertEquals(2, users.size());
+        assertEquals(3, users.size());
 
     }
 

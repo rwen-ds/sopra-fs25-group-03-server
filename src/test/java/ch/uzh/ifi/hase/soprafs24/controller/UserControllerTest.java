@@ -42,7 +42,7 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
 @AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTest {
 
-  private static final String AUTH_HEADER = "Authorization";
+  private static final String AUTH_HEADER = "token";
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @MockBean

@@ -44,18 +44,23 @@ public class UserService {
     }
 
     public User createUser(User newUser) {
+        if (newUser.getUsername().equals("admin")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The username 'admin' is reserved and cannot be used.");
+        }
         // check user
         checkIfUserExists(newUser);
         // check email
         User userByEmail = userRepository.findByEmail(newUser.getEmail());
         if (userByEmail != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "The email(" + newUser.getEmail() + ") already exists");
+                    "The email " + newUser.getEmail() + " already exists.");
         }
         // initialize
         newUser.setToken(UUID.randomUUID().toString());
         newUser.setStatus(UserStatus.ONLINE);
         newUser.setCreationDate(LocalDate.now());
+        newUser.setIsAdmin(false);
 
         // saves the given entity but data is only persisted in the database once
         // flush() is called
@@ -81,7 +86,7 @@ public class UserService {
 
         if (userByUsername != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "The username(" + userToBeCreated.getUsername() + ") already exists");
+                    "The username " + userToBeCreated.getUsername() + " already exists");
         }
     }
 
@@ -97,8 +102,8 @@ public class UserService {
         User loginUser = userRepository.findByToken(token);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "The user with id: " + userId + " was not found"));
-        if (loginUser == null || !Objects.equals(loginUser.getId(), userId)) {
+                        "The user with id " + userId + " was not found"));
+        if (loginUser == null || (!Objects.equals(loginUser.getId(), userId) && !loginUser.getUsername().equals("admin"))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
         }
         // update as we need
@@ -149,7 +154,7 @@ public class UserService {
         User user = userRepository.findByUsername(userInput.getUsername());
         // if user does not in the database
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Username: " + userInput.getUsername() + " does not exist");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Username " + userInput.getUsername() + " does not exist");
         }
         // if password is not the same
         if (!user.getPassword().equals(userInput.getPassword())) {
@@ -192,12 +197,12 @@ public class UserService {
     public void deleteUser(Long userId, String token) {
         User deleteUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "The user with id: " + userId + " was not found"));
+                        "The user with id " + userId + " was not found"));
         User currentUser = userRepository.findByToken(token);
         if (currentUser == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
         }
-        if (!Objects.equals(userId, currentUser.getId())) {
+        if (!Objects.equals(userId, currentUser.getId()) && !currentUser.getUsername().equals("admin")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
         }
         userRepository.delete(deleteUser);

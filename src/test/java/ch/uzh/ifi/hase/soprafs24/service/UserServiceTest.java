@@ -261,10 +261,12 @@ public class UserServiceTest {
 
         User user = new User();
         user.setId(1L);
+        user.setUsername("user");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         User currentUser = new User();
         currentUser.setId(2L);
+        currentUser.setUsername("currentUser");
         when(userRepository.findByToken("token")).thenReturn(currentUser);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {

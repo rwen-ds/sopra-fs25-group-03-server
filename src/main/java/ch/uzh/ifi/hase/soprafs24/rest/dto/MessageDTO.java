@@ -8,6 +8,7 @@ public class MessagePostDTO {
     private Long recipientId;
     private String content;
     private LocalDateTime timestamp;
+    private boolean isRead;
 
     public MessagePostDTO() {
     }

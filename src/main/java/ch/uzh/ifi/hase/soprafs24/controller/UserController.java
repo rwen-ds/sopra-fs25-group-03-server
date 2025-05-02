@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserController {
 
-    private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER = "token";
     private final UserService userService;
 
     UserController(UserService userService) {

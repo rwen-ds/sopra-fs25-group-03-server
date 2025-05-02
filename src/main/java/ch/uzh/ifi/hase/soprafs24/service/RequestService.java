@@ -26,7 +26,7 @@ public class RequestService {
 
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
-    private final String adminToken = "adminToken"; // This should be replaced with a secure token management system
+//    private String adminToken; // This should be replaced with a secure token management system
 
 
     @Autowired
@@ -36,20 +36,21 @@ public class RequestService {
     }
 
     public List<Request> getRequests(String token) {
-        if (!token.equals(adminToken)) {
+        User user = userRepository.findByToken(token);
+        if (!user.getUsername().equals("admin")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
         return this.requestRepository.findAll();
     }
 
-    public List<Request> getWaitingRequests(String token) {
-        if (!token.equals(adminToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-        }
-        return this.requestRepository.findAll().stream()
-                .filter(request -> request.getStatus() == RequestStatus.WAITING)
-                .toList();
-    }
+//    public List<Request> getWaitingRequests(String token) {
+//        if (!token.equals(adminToken)) {
+//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+//        }
+//        return this.requestRepository.findAll().stream()
+//                .filter(request -> request.getStatus() == RequestStatus.WAITING)
+//                .toList();
+//    }
 
     public Request createRequest(Request newRequest, Long userId) {
 
@@ -83,7 +84,8 @@ public class RequestService {
 
     public Request updateRequest(Long id, Request updatedRequest, String token) {
         Request existingRequest = getRequestById(id);
-        if (!token.equals(adminToken) && !existingRequest.getPoster().getToken().equals(token)) {
+        User user = userRepository.findByToken(token);
+        if (!user.getUsername().equals("admin") && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
 
@@ -114,8 +116,9 @@ public class RequestService {
     }
 
     public void deleteRequest(Long id, String token) {
+        User user = userRepository.findByToken(token);
         Request existingRequest = getRequestById(id);
-        if (!token.equals(adminToken) && !existingRequest.getPoster().getToken().equals(token)) {
+        if (!user.getUsername().equals("admin") && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
         requestRepository.delete(existingRequest);
@@ -164,7 +167,7 @@ public class RequestService {
             if (request.getStatus() == RequestStatus.VOLUNTEERED && request.getVolunteer() != null) {
                 notifications.add(new NotificationDTO(
                         RequestStatus.VOLUNTEERED,
-                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request '" + request.getTitle() + "'",
+                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request " + request.getTitle() + ".",
                         request.getId(),
                         user.getId(),
                         request.getVolunteer().getId(),
@@ -188,7 +191,7 @@ public class RequestService {
             if (request.getStatus() == RequestStatus.ACCEPTING) {
                 notifications.add(new NotificationDTO(
                         RequestStatus.ACCEPTING,
-                        "Your volunteer for request '" + request.getTitle() + "' is accepted!",
+                        "Your volunteer for request " + request.getTitle() + " is accepted!",
                         request.getId(),
                         request.getPoster().getId(),
                         user.getId(),
@@ -199,13 +202,16 @@ public class RequestService {
         return notifications;
     }
 
-    public List<Request> getActiveRequests() {
+    public List<Request> getWaitingRequests() {
         List<Request> waitingRequests = requestRepository.findByStatus(RequestStatus.WAITING);
 
         return waitingRequests;
     }
 
     public void volunteerRequest(Request request, User volunteer) {
+        if (request.getPoster().getId().equals(volunteer.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot volunteer for your own request.");
+        }
         request.setVolunteer(volunteer);
         request.setStatus(RequestStatus.VOLUNTEERED);
         requestRepository.save(request);

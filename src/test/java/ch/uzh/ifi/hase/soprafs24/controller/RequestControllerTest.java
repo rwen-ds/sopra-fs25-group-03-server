@@ -37,7 +37,7 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
 @AutoConfigureMockMvc(addFilters = false)  // close Filter
 public class RequestControllerTest {
 
-    private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER = "token";
 
     @Autowired
     private MockMvc mockMvc;

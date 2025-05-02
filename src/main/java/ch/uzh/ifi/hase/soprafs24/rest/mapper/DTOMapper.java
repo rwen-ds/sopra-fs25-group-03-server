@@ -38,6 +38,7 @@ public interface DTOMapper {
   @Mapping(source = "school", target = "school")
   @Mapping(source = "age", target = "age")
   @Mapping(source = "language", target = "language")
+  @Mapping(source = "isAdmin", target = "isAdmin")
   UserGetDTO convertEntityToUserGetDTO(User user); // Birthday?
 
   @Mapping(source = "title", target = "title")
@@ -59,11 +60,4 @@ public interface DTOMapper {
   @Mapping(source = "poster.id", target = "posterId")
   @Mapping(source = "volunteer.id", target = "volunteerId")
   RequestGetDTO convertEntityToRequestGetDTO(Request request);
-
-    @Mapping(source = "senderId", target = "senderId")
-    @Mapping(source = "recipientId", target = "recipientId")
-    @Mapping(source = "content", target = "content")
-    @Mapping(source = "timestamp", target = "timestamp")
-    Message convertMessagePostDTOtoEntity(MessagePostDTO messagePostDTO);
-
 }

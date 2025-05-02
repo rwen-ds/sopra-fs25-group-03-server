@@ -16,8 +16,14 @@ public class Message implements Serializable {
     @GeneratedValue
     private Long id;
 
-    private Long senderId;
-    private Long recipientId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = false)
+    private User sender;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_id", nullable = false)
+    private User recipient;
+
     private String content;
     private LocalDateTime timestamp;
     private boolean isRead;
@@ -33,20 +39,20 @@ public class Message implements Serializable {
         this.id = id;
     }
 
-    public Long getSenderId() {
-        return senderId;
+    public User getSender() {
+        return sender;
     }
 
-    public void setSenderId(Long senderId) {
-        this.senderId = senderId;
+    public void setSender(User sender) {
+        this.sender = sender;
     }
 
-    public Long getRecipientId() {
-        return recipientId;
+    public User getRecipient() {
+        return recipient;
     }
 
-    public void setRecipientId(Long recipientId) {
-        this.recipientId = recipientId;
+    public void setRecipient(User recipient) {
+        this.recipient = recipient;
     }
 
     public String getContent() {

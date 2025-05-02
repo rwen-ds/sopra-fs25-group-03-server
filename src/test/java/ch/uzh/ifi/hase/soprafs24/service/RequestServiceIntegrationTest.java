@@ -1,10 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,7 +35,6 @@ public class RequestServiceIntegrationTest {
     @Autowired
     private RequestRepository requestRepository;
 
-    private final String adminToken = "adminToken";
 
     private User createUser(String username, String token) {
         User user = new User();
@@ -73,7 +75,7 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void createAndRetrieveRequest_success() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
 
         Request newRequest = new Request();
         newRequest.setTitle("Test Request");
@@ -91,7 +93,7 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void createRequest_invalidParameters_throwsException() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
 
         Request newRequest = new Request();
         newRequest.setEmergencyLevel(RequestEmergencyLevel.HIGH);
@@ -103,20 +105,24 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void updateRequest_validToken_success() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
         Request request = createRequest("Initial Title", RequestStatus.WAITING, poster);
 
         Request update = new Request();
         update.setTitle("Updated Title");
 
-        Request updatedRequest = requestService.updateRequest(request.getId(), update, adminToken);
+        Request updatedRequest = requestService.updateRequest(request.getId(), update, "token");
         assertEquals("Updated Title", updatedRequest.getTitle());
     }
 
     @Test
     public void updateRequest_invalidToken_throwsException() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
+        userRepository.save(poster);
+        User poster2 = createUser("poster2", "wrongToken");
+        userRepository.save(poster);
         Request request = createRequest("Initial Title", RequestStatus.WAITING, poster);
+        requestRepository.save(request);
 
         Request update = new Request();
         update.setTitle("Updated Title");
@@ -128,7 +134,7 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void acceptRequest_validScenario_success() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
         User volunteer = createUser("volunteer", "volunteerToken");
         Request request = createRequest("Need Help", RequestStatus.VOLUNTEERED, poster);
 
@@ -141,7 +147,7 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void completeRequest_validScenario_success() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
         User volunteer = createUser("volunteer", "volunteerToken");
         Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster, volunteer);
 
@@ -153,11 +159,11 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void cancelRequest_invalidStatus_throwsException() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
         Request request = createRequest("Cancel me", RequestStatus.WAITING, poster);
 
         assertThrows(ResponseStatusException.class, () -> {
-            requestService.cancelRequest(request.getId(), adminToken);
+            requestService.cancelRequest(request.getId(), "token");
         });
     }
 
@@ -171,7 +177,7 @@ public class RequestServiceIntegrationTest {
     @Test
     public void deleteRequest_notFound_throwsException() {
         assertThrows(ResponseStatusException.class, () -> {
-            requestService.deleteRequest(999L, adminToken);
+            requestService.deleteRequest(999L, "token");
         });
     }
 
@@ -185,7 +191,7 @@ public class RequestServiceIntegrationTest {
 
     @Test
     public void completeRequest_invalidToken_throwsUnauthorized() {
-        User poster = createUser("poster", adminToken);
+        User poster = createUser("poster", "token");
         User volunteer = createUser("volunteer", "volunteerToken");
         Request request = createRequest("Complete me", RequestStatus.ACCEPTING, poster, volunteer);
 

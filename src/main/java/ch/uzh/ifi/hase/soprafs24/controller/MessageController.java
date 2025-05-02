@@ -3,8 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.MessagePostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MessageService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/messages")
@@ -19,7 +19,7 @@ public class MessageController {
 
     private final MessageService messageService;
     private final UserService userService;
-    private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER = "token";
 
     public MessageController(MessageService messageService, UserService userService) {
         this.messageService = messageService;
@@ -36,10 +36,21 @@ public class MessageController {
     }
 
     @GetMapping("/conversation/{senderId}/{recipientId}")
-    public ResponseEntity<List<Message>> getConversationMessages(@PathVariable Long senderId,
+    public ResponseEntity<List<MessageDTO>> getConversationMessages(@PathVariable Long senderId,
                                                                  @PathVariable Long recipientId){
         List<Message> conversation = messageService.getConversation(senderId, recipientId);
-        return ResponseEntity.ok(conversation);
+
+        List<MessageDTO> messageDTOs = conversation.stream().map(msg -> {
+            return new MessageDTO(
+                    msg.getSender().getId(),
+                    msg.getRecipient().getId(),
+                    msg.getContent(),
+                    msg.getTimestamp(),
+                    msg.isRead()
+            );
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(messageDTOs);
     }
 
     @GetMapping("/contacts")
@@ -55,10 +66,8 @@ public class MessageController {
     }
 
     @PostMapping("/send")
-    public String chat(@RequestBody MessagePostDTO messagePostDTO) {
-        Message message = DTOMapper.INSTANCE.convertMessagePostDTOtoEntity(messagePostDTO);
-        messageService.chat(message);
-
+    public String chat(@RequestBody MessageDTO messageDTO) {
+        messageService.chat(messageDTO);
         return "sent";
     }
 

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/requests")
 public class RequestController {
 
-    private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER = "token";
     private final RequestService requestService;
     private final UserService userService;
     private final UserRepository userRepository;
@@ -179,7 +179,7 @@ public class RequestController {
     @GetMapping("/active")
     public List<RequestGetDTO> getActiveRequests() {
         List<RequestGetDTO> requestGetDTOs = new ArrayList<>();
-        List<Request> activeRequests = requestService.getActiveRequests();
+        List<Request> activeRequests = requestService.getWaitingRequests();
         for (Request request : activeRequests) {
             requestGetDTOs.add(DTOMapper.INSTANCE.convertEntityToRequestGetDTO(request));
         }

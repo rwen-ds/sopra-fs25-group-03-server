@@ -17,6 +17,7 @@ public class UserGetDTO {
     private String school;
     private Integer age;
     private String language;
+    private boolean isAdmin;
 
     public Long getId() {
         return id;
@@ -96,5 +97,13 @@ public class UserGetDTO {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public boolean getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 }

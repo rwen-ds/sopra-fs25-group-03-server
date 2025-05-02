@@ -38,8 +38,6 @@ public class RequestServiceTest {
 
     @InjectMocks
     private RequestService requestService;
-    
-    private final String adminToken = "adminToken";
 
     private User createSampleUser(Long id, String username, String token) {
         User user = new User();
@@ -135,9 +133,10 @@ public class RequestServiceTest {
     @Test
     public void testUpdateRequest_success() {
 
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         Request existingRequest = createSampleRequest(1L, "Old Title", RequestStatus.WAITING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByToken("token")).thenReturn(poster);
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 
@@ -146,7 +145,7 @@ public class RequestServiceTest {
         update.setDescription("New Description");
         
 
-        Request updatedRequest = requestService.updateRequest(1L, update, adminToken);
+        Request updatedRequest = requestService.updateRequest(1L, update, "token");
         assertEquals("New Title", updatedRequest.getTitle());
         assertEquals("New Description", updatedRequest.getDescription());
     }
@@ -157,7 +156,10 @@ public class RequestServiceTest {
         User poster = createSampleUser(100L, "posterUser", "correctToken");
         Request existingRequest = createSampleRequest(1L, "Old Title", RequestStatus.WAITING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
-        
+
+        User fakeUser = createSampleUser(200L, "notAdmin", "wrongToken");
+        when(userRepository.findByToken("wrongToken")).thenReturn(fakeUser);
+
         Request update = new Request();
         update.setTitle("New Title");
         
@@ -171,12 +173,13 @@ public class RequestServiceTest {
     @Test
     public void testDeleteRequest_success() {
 
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         Request existingRequest = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByToken("token")).thenReturn(poster);
         doNothing().when(requestRepository).delete(existingRequest);
         
-        assertDoesNotThrow(() -> requestService.deleteRequest(1L, adminToken));
+        assertDoesNotThrow(() -> requestService.deleteRequest(1L, "token"));
 
         verify(requestRepository, times(1)).delete(existingRequest);
     }
@@ -186,6 +189,9 @@ public class RequestServiceTest {
         User poster = createSampleUser(100L, "posterUser", "correctToken");
         Request existingRequest = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
+
+        User fakeUser = createSampleUser(200L, "notAdmin", "wrongToken");
+        when(userRepository.findByToken("wrongToken")).thenReturn(fakeUser);
         
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.deleteRequest(1L, "wrongToken");
@@ -196,7 +202,7 @@ public class RequestServiceTest {
     @Test
     public void testAcceptRequest_success() {
 
-        Request request = createSampleRequest(1L, "Title", RequestStatus.VOLUNTEERED, createSampleUser(100L, "posterUser", adminToken));
+        Request request = createSampleRequest(1L, "Title", RequestStatus.VOLUNTEERED, createSampleUser(100L, "posterUser", "token"));
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
@@ -211,7 +217,7 @@ public class RequestServiceTest {
     @Test
     public void testAcceptRequest_invalidStatus_throwsBadRequest() {
 
-        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, createSampleUser(100L, "posterUser", adminToken));
+        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, createSampleUser(100L, "posterUser", "token"));
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         
         createSampleUser(200L, "volunteerUser", "volunteerToken");
@@ -224,7 +230,7 @@ public class RequestServiceTest {
     
     @Test
     public void testCompleteRequest_success() {
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
@@ -236,7 +242,7 @@ public class RequestServiceTest {
     
     @Test
     public void testCompleteRequest_invalidStatus_throwsBadRequest() {
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
@@ -249,39 +255,44 @@ public class RequestServiceTest {
     
     @Test
     public void testCancelRequest_success() {
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
-        requestService.cancelRequest(1L, adminToken);
+        requestService.cancelRequest(1L, "token");
         assertEquals(RequestStatus.CANCELLED, request.getStatus());
     }
     
     @Test
     public void testCancelRequest_invalidStatus_throwsBadRequest() {
-        User poster = createSampleUser(100L, "posterUser", adminToken);
+        User poster = createSampleUser(100L, "posterUser", "token");
         Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            requestService.cancelRequest(1L, adminToken);
+            requestService.cancelRequest(1L, "token");
         });
         assertTrue(exception.getMessage().contains("Cannot cancel a request that isn't accepted"));
     }
     
     @Test
     public void testGetRequests_and_GetWaitingRequests() {
-        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, createSampleUser(100L, "posterUser", adminToken));
-        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.ACCEPTING, createSampleUser(100L, "posterUser", adminToken));
-        Request request3 = createSampleRequest(3L, "Request 3", RequestStatus.WAITING, createSampleUser(100L, "posterUser", adminToken));
-        
+        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, createSampleUser(100L, "posterUser", "token"));
+        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.ACCEPTING, createSampleUser(100L, "posterUser", "token"));
+        Request request3 = createSampleRequest(3L, "Request 3", RequestStatus.WAITING, createSampleUser(100L, "posterUser", "token"));
+
+        User admin = createSampleUser(200L, "admin", "adminToken");
+        when(userRepository.findByToken("adminToken")).thenReturn(admin);
+
         when(requestRepository.findAll()).thenReturn(List.of(request1, request2, request3));
-        
-        List<Request> allRequests = requestService.getRequests(adminToken);
+        when(requestRepository.findByStatus(RequestStatus.WAITING)).thenReturn(List.of(request1, request3));
+
+
+        List<Request> allRequests = requestService.getRequests("adminToken");
         assertEquals(3, allRequests.size());
         
-        List<Request> waitingRequests = requestService.getWaitingRequests(adminToken);
+        List<Request> waitingRequests = requestService.getWaitingRequests();
         assertEquals(2, waitingRequests.size());
         for (Request req : waitingRequests) {
             assertEquals(RequestStatus.WAITING, req.getStatus());

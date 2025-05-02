@@ -16,7 +16,7 @@ import java.io.IOException;
 
 @Component
 public class AuthFilter extends OncePerRequestFilter {
-    private static final String AUTH_HEADER = "Authorization";
+    private static final String AUTH_HEADER = "token";
     private final UserRepository userRepository;
 
     public AuthFilter(UserRepository userRepository) {
@@ -38,8 +38,8 @@ public class AuthFilter extends OncePerRequestFilter {
         if (requestURI.equals("/") ||
                 (method.equals("POST") && requestURI.equals("/users")) ||
                 requestURI.startsWith("/users/login") ||
-                requestURI.startsWith("/users/logout") ||
-                requestURI.startsWith("/translate") ||
+//                requestURI.startsWith("/users/logout") ||
+//                requestURI.startsWith("/translate") ||
                 requestURI.startsWith("/h2-console") ||
                 requestURI.startsWith("/favicon.ico") ||
 //                requestURI.startsWith("/requests") ||

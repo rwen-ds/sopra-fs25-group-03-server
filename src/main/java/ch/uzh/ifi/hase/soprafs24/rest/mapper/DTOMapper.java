@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
+import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -60,4 +61,13 @@ public interface DTOMapper {
   @Mapping(source = "poster.id", target = "posterId")
   @Mapping(source = "volunteer.id", target = "volunteerId")
   RequestGetDTO convertEntityToRequestGetDTO(Request request);
+
+    @Mapping(source = "recipient.id", target = "recipientId")
+    @Mapping(source = "relatedUser.id", target = "relatedUserId")
+    @Mapping(source = "request.id", target = "requestId")
+    @Mapping(source = "type", target = "type")
+    @Mapping(source = "content", target = "content")
+    @Mapping(source = "timestamp", target = "timestamp")
+    @Mapping(source = "read", target = "read")
+    NotificationDTO convertEntityToNotificationDTO(Notification notification);
 }

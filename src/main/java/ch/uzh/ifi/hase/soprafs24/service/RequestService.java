@@ -1,11 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
+import org.apache.catalina.Store;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +31,15 @@ public class RequestService {
 
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 //    private String adminToken; // This should be replaced with a secure token management system
 
 
     @Autowired
-    public RequestService(RequestRepository requestRepository, UserRepository userRepository) {
+    public RequestService(RequestRepository requestRepository, UserRepository userRepository, NotificationService notificationService) {
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Request> getRequests(String token) {
@@ -124,15 +131,18 @@ public class RequestService {
         requestRepository.delete(existingRequest);
     }
 
-    public void acceptRequest(Long userId, Long volunteerId) {
-        Request existingRequest = getRequestById(userId);
+    public void acceptRequest(Long requestId, Long volunteerId) {
+        Request existingRequest = getRequestById(requestId);
         if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
         }
-        existingRequest.setVolunteer(userRepository.findById(volunteerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId)));
+        User volunteer = userRepository.findById(volunteerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId));
+        existingRequest.setVolunteer(volunteer);
         existingRequest.setStatus(RequestStatus.ACCEPTING);
         requestRepository.save(existingRequest);
+
+        notificationService.acceptNotification(existingRequest, volunteer);
     }
 
     public void completeRequest(Long id, String token) {
@@ -145,6 +155,8 @@ public class RequestService {
         }
         existingRequest.setStatus(RequestStatus.COMPLETED);
         requestRepository.save(existingRequest);
+
+        notificationService.completeNotification(existingRequest);
     }
 
     public void cancelRequest(Long id, String token) {
@@ -160,47 +172,47 @@ public class RequestService {
     }
 
 
-    public List<NotificationDTO> getNotifications(User user) {
-        List<NotificationDTO> notifications = new ArrayList<>();
-        List<Request> postedRequests = requestRepository.findByPoster(user);
-        for (Request request : postedRequests) {
-            if (request.getStatus() == RequestStatus.VOLUNTEERED && request.getVolunteer() != null) {
-                notifications.add(new NotificationDTO(
-                        RequestStatus.VOLUNTEERED,
-                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request " + request.getTitle() + ".",
-                        request.getId(),
-                        user.getId(),
-                        request.getVolunteer().getId(),
-                        request.getTitle()
-                ));
-            }
-            else if (request.getStatus() == RequestStatus.COMPLETED && request.getVolunteer() != null) {
-                notifications.add(new NotificationDTO(
-                        RequestStatus.COMPLETED,
-                        "Your request '" + request.getTitle() + "' is completed by volunteer " + request.getVolunteer().getUsername() + "!",
-                        request.getId(),
-                        user.getId(),
-                        request.getVolunteer().getId(),
-                        request.getTitle()
-                ));
-            }
-        }
-
-        List<Request> volunteeredRequests = requestRepository.findByVolunteer(user);
-        for (Request request : volunteeredRequests) {
-            if (request.getStatus() == RequestStatus.ACCEPTING) {
-                notifications.add(new NotificationDTO(
-                        RequestStatus.ACCEPTING,
-                        "Your volunteer for request " + request.getTitle() + " is accepted!",
-                        request.getId(),
-                        request.getPoster().getId(),
-                        user.getId(),
-                        request.getTitle()
-                ));
-            }
-        }
-        return notifications;
-    }
+//    public List<NotificationDTO> getNotifications(User user) {
+//        List<NotificationDTO> notifications = new ArrayList<>();
+//        List<Request> postedRequests = requestRepository.findByPoster(user);
+//        for (Request request : postedRequests) {
+//            if (request.getStatus() == RequestStatus.VOLUNTEERED && request.getVolunteer() != null) {
+//                notifications.add(new NotificationDTO(
+//                        RequestStatus.VOLUNTEERED,
+//                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request " + request.getTitle() + ".",
+//                        request.getId(),
+//                        user.getId(),
+//                        request.getVolunteer().getId(),
+//                        request.getTitle()
+//                ));
+//            }
+//            else if (request.getStatus() == RequestStatus.COMPLETED && request.getVolunteer() != null) {
+//                notifications.add(new NotificationDTO(
+//                        RequestStatus.COMPLETED,
+//                        "Your request '" + request.getTitle() + "' is completed by volunteer " + request.getVolunteer().getUsername() + "!",
+//                        request.getId(),
+//                        user.getId(),
+//                        request.getVolunteer().getId(),
+//                        request.getTitle()
+//                ));
+//            }
+//        }
+//
+//        List<Request> volunteeredRequests = requestRepository.findByVolunteer(user);
+//        for (Request request : volunteeredRequests) {
+//            if (request.getStatus() == RequestStatus.ACCEPTING) {
+//                notifications.add(new NotificationDTO(
+//                        RequestStatus.ACCEPTING,
+//                        "Your volunteer for request " + request.getTitle() + " is accepted!",
+//                        request.getId(),
+//                        request.getPoster().getId(),
+//                        user.getId(),
+//                        request.getTitle()
+//                ));
+//            }
+//        }
+//        return notifications;
+//    }
 
     public List<Request> getWaitingRequests() {
         List<Request> waitingRequests = requestRepository.findByStatus(RequestStatus.WAITING);
@@ -215,6 +227,8 @@ public class RequestService {
         request.setVolunteer(volunteer);
         request.setStatus(RequestStatus.VOLUNTEERED);
         requestRepository.save(request);
+
+        notificationService.volunteerNotification(request, volunteer);
     }
 
     public void markRequestAsDone(Long requestId, String token) {

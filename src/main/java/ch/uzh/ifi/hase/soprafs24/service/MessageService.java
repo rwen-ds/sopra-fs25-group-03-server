@@ -32,16 +32,14 @@ public class MessageService {
 
     private final Map<Long, DeferredResult<String>> waitingUsers = new ConcurrentHashMap<>();
 
-    public List<Message> getAndMarkAsRead(Long senderId, Long recipientId) {
+    public void markMessageAsRead(Long senderId, Long recipientId) {
         List<Message> messages = messageRepository
                 .findBySenderIdAndRecipientIdAndIsReadFalse(senderId, recipientId);
 
-        // Mark messages as read
-        messages.forEach(msg -> {
-            msg.setRead(true);
-            messageRepository.save(msg);
-        });
-        return messages;
+        if (!messages.isEmpty()) {
+            messages.forEach(msg -> msg.setRead(true));
+            messageRepository.saveAll(messages);
+        }
     }
 
     public List<Message> getConversation(Long senderId, Long recipientId) {

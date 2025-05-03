@@ -35,7 +35,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             "ORDER BY m.timestamp DESC")
     List<Message> findTopByUserPairOrderByTimestampDesc(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
-    @Query("SELECT m FROM Message m WHERE m.recipient.id = :userId AND m.isRead = false")
-    List<Message> findByRecipientIdAndIsReadFalse(@Param("userId") Long userId);
+    @Query("SELECT COUNT(m) > 0 FROM Message m WHERE m.recipient.id = :recipientId AND m.isRead = false")
+    boolean existsUnreadByRecipientId(@Param("recipientId") Long recipientId);
 
 }

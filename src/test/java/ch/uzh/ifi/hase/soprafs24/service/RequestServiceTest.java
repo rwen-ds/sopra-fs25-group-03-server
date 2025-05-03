@@ -39,6 +39,9 @@ public class RequestServiceTest {
     @InjectMocks
     private RequestService requestService;
 
+    @Mock
+    private NotificationService notificationService;
+
     private User createSampleUser(Long id, String username, String token) {
         User user = new User();
         user.setId(id);

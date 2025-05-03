@@ -169,12 +169,12 @@ public class RequestController {
         }
     }
 
-    @GetMapping("/notifications")
-    public List<NotificationDTO> getNotifications(@RequestHeader(AUTH_HEADER) String token) {
-        User user = userService.getUserByToken(token);
-        List<NotificationDTO> notifications = requestService.getNotifications(user);
-        return notifications;
-    }
+//    @GetMapping("/notifications")
+//    public List<NotificationDTO> getNotifications(@RequestHeader(AUTH_HEADER) String token) {
+//        User user = userService.getUserByToken(token);
+//        List<NotificationDTO> notifications = notification.getNotifications(user);
+//        return notifications;
+//    }
 
     @GetMapping("/active")
     public List<RequestGetDTO> getActiveRequests() {

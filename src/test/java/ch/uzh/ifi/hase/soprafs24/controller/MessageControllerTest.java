@@ -2,6 +2,8 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageDTO;
 import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
@@ -34,6 +36,12 @@ public class MessageControllerTest {
 
     @MockBean
     private MessageService messageService;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    @MockBean
+    private MessageRepository messageRepository;
 
     @MockBean
     private UserService userService;

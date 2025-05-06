@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
-import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -25,13 +24,12 @@ public class Notification implements Serializable {
     private User relatedUser;
 
     @ManyToOne
-    @JoinColumn( nullable = false)
+    @JoinColumn(nullable = false)
     private Request request;
 
     @Column(nullable = false)
     private NotificationType type;
 
-    private String content;
     private LocalDateTime timestamp;
     private boolean isRead;
 
@@ -60,14 +58,6 @@ public class Notification implements Serializable {
 
     public void setRequest(Request request) {
         this.request = request;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
     }
 
     public LocalDateTime getTimestamp() {

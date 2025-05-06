@@ -15,4 +15,6 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByPoster(User poster);
     List<Request> findByVolunteer(User volunteer);
     List<Request> findByStatus(RequestStatus status);
+    List<Request> findByVolunteerId(Long volunteerId);
+
 }

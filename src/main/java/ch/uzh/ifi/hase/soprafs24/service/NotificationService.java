@@ -19,66 +19,30 @@ public class NotificationService {
         this.notificationRepository = notificationRepository;
     }
 
+    private void createAndSaveNotification(User recipient, User relatedUser, Request request, NotificationType type) {
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setRelatedUser(relatedUser);
+        notification.setRequest(request);
+        notification.setTimestamp(LocalDateTime.now());
+        notification.setType(type);
+        notification.setRead(false);
+        notificationRepository.save(notification);
+    }
+
+
     public void volunteerNotification(Request request, User volunteer) {
-        Notification notification1 = new Notification();
-        notification1.setRecipient(request.getPoster());
-        notification1.setRelatedUser(volunteer);
-        notification1.setRequest(request);
-        notification1.setContent("Volunteer " + volunteer.getUsername() + " is applying to help your request '" + request.getTitle() + "'.");
-        notification1.setTimestamp(LocalDateTime.now());
-        notification1.setType(NotificationType.VOLUNTEERED);
-        notification1.setRead(false);
-
-        notificationRepository.save(notification1);
-
-        Notification notification2 = new Notification();
-        notification2.setRecipient(volunteer);
-        notification2.setRelatedUser(request.getPoster());
-        notification2.setRequest(request);
-        notification2.setContent("You have volunteered to help '" + request.getTitle() + "' posted by " +
-                request.getPoster().getUsername());
-        notification2.setTimestamp(LocalDateTime.now());
-        notification2.setType(NotificationType.VOLUNTEERING);
-        notification2.setRead(false);
-
-        notificationRepository.save(notification2);
+        createAndSaveNotification(request.getPoster(), volunteer, request, NotificationType.VOLUNTEERED);
+        createAndSaveNotification(volunteer, request.getPoster(), request, NotificationType.VOLUNTEERING);
     }
 
     public void acceptNotification(Request request, User volunteer) {
-        Notification notification1 = new Notification();
-        notification1.setRecipient(request.getPoster());
-        notification1.setRelatedUser(volunteer);
-        notification1.setRequest(request);
-        notification1.setContent("You accepted " + volunteer.getUsername() + "'s help for your request '" + request.getTitle() + "'.");
-        notification1.setTimestamp(LocalDateTime.now());
-        notification1.setType(NotificationType.ACCEPTING);
-        notification1.setRead(false);
-
-        notificationRepository.save(notification1);
-
-        Notification notification2 = new Notification();
-        notification2.setRecipient(volunteer);
-        notification2.setRelatedUser(request.getPoster());
-        notification2.setRequest(request);
-        notification2.setContent("Your volunteer for request " + request.getTitle() + " is accepted!");
-        notification2.setTimestamp(LocalDateTime.now());
-        notification2.setType(NotificationType.ACCEPTED);
-        notification2.setRead(false);
-
-        notificationRepository.save(notification2);
+        createAndSaveNotification(request.getPoster(), volunteer, request, NotificationType.ACCEPTING);
+        createAndSaveNotification(volunteer, request.getPoster(), request, NotificationType.ACCEPTED);
     }
 
     public void completeNotification(Request request) {
-        Notification notification = new Notification();
-        notification.setRecipient(request.getPoster());
-        notification.setRelatedUser(request.getVolunteer());
-        notification.setRequest(request);
-        notification.setContent("Your request '" + request.getTitle() + "' is completed by volunteer " + request.getVolunteer().getUsername() + "!");
-        notification.setTimestamp(LocalDateTime.now());
-        notification.setType(NotificationType.COMPLETED);
-        notification.setRead(false);
-
-        notificationRepository.save(notification);
+        createAndSaveNotification(request.getPoster(), request.getVolunteer(), request, NotificationType.COMPLETED);
     }
 
     public void markNotificationsAsRead(User user) {
@@ -87,5 +51,17 @@ public class NotificationService {
             notification.setRead(true);
         }
         notificationRepository.saveAll(notifications);
+    }
+
+    public void feedbackNotification(Request request) {
+        createAndSaveNotification(request.getVolunteer(), request.getPoster(), request, NotificationType.FEEDBACK);
+    }
+
+    public void posterCancelNotification(Request request) {
+        createAndSaveNotification(request.getVolunteer(), request.getPoster(), request, NotificationType.POSTERCALCEL);
+    }
+
+    public void volunteerCancelNotification(Request request) {
+        createAndSaveNotification(request.getPoster(), request.getVolunteer(), request, NotificationType.VOLUNTEERCALCEL);
     }
 }

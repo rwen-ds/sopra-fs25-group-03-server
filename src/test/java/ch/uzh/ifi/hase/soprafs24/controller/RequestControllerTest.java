@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import java.time.LocalDate;
 import java.util.Collections;
 
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +54,9 @@ public class RequestControllerTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private RequestRepository requestRepository;
 
     @Autowired
     private ObjectMapper objectMapper;

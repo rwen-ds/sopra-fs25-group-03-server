@@ -9,8 +9,9 @@ import java.time.LocalDateTime;
 public class NotificationDTO {
     private Long recipientId;
     private Long relatedUserId;
+    private String relatedUsername;
     private Long requestId;
-    private String content;
+    private String requestTitle;
     private NotificationType type;
     private boolean isRead;
     private LocalDateTime timestamp;
@@ -32,14 +33,6 @@ public class NotificationDTO {
 
     public void setRequestId(Long requestId) {
         this.requestId = requestId;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
     }
 
     public NotificationType getType() {
@@ -72,5 +65,21 @@ public class NotificationDTO {
 
     public void setRelatedUserId(Long relatedUserId) {
         this.relatedUserId = relatedUserId;
+    }
+
+    public String getRelatedUsername() {
+        return relatedUsername;
+    }
+
+    public void setRelatedUsername(String relatedUsername) {
+        this.relatedUsername = relatedUsername;
+    }
+
+    public String getRequestTitle() {
+        return requestTitle;
+    }
+
+    public void setRequestTitle(String requestTitle) {
+        this.requestTitle = requestTitle;
     }
 }

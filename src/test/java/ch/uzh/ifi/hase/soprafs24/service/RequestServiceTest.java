@@ -259,24 +259,26 @@ public class RequestServiceTest {
     @Test
     public void testCancelRequest_success() {
         User poster = createSampleUser(100L, "posterUser", "token");
-        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster);
+        User volunteer = createSampleUser(100L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
         
         requestService.cancelRequest(1L, "token");
-        assertEquals(RequestStatus.CANCELLED, request.getStatus());
+        assertEquals(RequestStatus.WAITING, request.getStatus());
     }
     
     @Test
     public void testCancelRequest_invalidStatus_throwsBadRequest() {
         User poster = createSampleUser(100L, "posterUser", "token");
-        Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
+        User volunteer = createSampleUser(100L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster, volunteer);
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.cancelRequest(1L, "token");
         });
-        assertTrue(exception.getMessage().contains("Cannot cancel a request that isn't accepted"));
+        assertTrue(exception.getMessage().contains("Only accepted or volunteered requests can be canceled"));
     }
     
     @Test

@@ -1,15 +1,11 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
-import org.apache.catalina.Store;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -49,15 +43,6 @@ public class RequestService {
         }
         return this.requestRepository.findAll();
     }
-
-//    public List<Request> getWaitingRequests(String token) {
-//        if (!token.equals(adminToken)) {
-//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-//        }
-//        return this.requestRepository.findAll().stream()
-//                .filter(request -> request.getStatus() == RequestStatus.WAITING)
-//                .toList();
-//    }
 
     public Request createRequest(Request newRequest, Long userId) {
 
@@ -147,12 +132,13 @@ public class RequestService {
 
     public void completeRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
+        if (existingRequest.getStatus() != RequestStatus.ACCEPTING || existingRequest.getVolunteer() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted requests can be completed");
+        }
         if (!existingRequest.getVolunteer().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
-        if (existingRequest.getStatus() != RequestStatus.ACCEPTING) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted requests can be completed");
-        }
+
         existingRequest.setStatus(RequestStatus.COMPLETED);
         requestRepository.save(existingRequest);
 
@@ -161,58 +147,31 @@ public class RequestService {
 
     public void cancelRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
-        if (!existingRequest.getPoster().getToken().equals(token)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        User poster = existingRequest.getPoster();
+        User volunteer = existingRequest.getVolunteer();
+        if (volunteer == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It's not volunteered");
         }
-        if (existingRequest.getStatus() != RequestStatus.ACCEPTING) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a request that isn't accepted");
+        if (!existingRequest.getPoster().getToken().equals(token) && !existingRequest.getVolunteer().getToken().equals(token)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid user");
         }
-        existingRequest.setStatus(RequestStatus.CANCELLED);
+        if (poster.getToken().equals(token)) {
+            if (existingRequest.getStatus() != RequestStatus.ACCEPTING && existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted or volunteered requests can be canceled");
+            }
+            notificationService.posterCancelNotification(existingRequest);
+        }
+       else if (volunteer.getToken().equals(token)) {
+            if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED && existingRequest.getStatus() != RequestStatus.ACCEPTING) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It's not volunteered");
+            }
+            notificationService.volunteerCancelNotification(existingRequest);
+        }
+
+        existingRequest.setStatus(RequestStatus.WAITING);
+        existingRequest.setVolunteer(null);
         requestRepository.save(existingRequest);
     }
-
-
-//    public List<NotificationDTO> getNotifications(User user) {
-//        List<NotificationDTO> notifications = new ArrayList<>();
-//        List<Request> postedRequests = requestRepository.findByPoster(user);
-//        for (Request request : postedRequests) {
-//            if (request.getStatus() == RequestStatus.VOLUNTEERED && request.getVolunteer() != null) {
-//                notifications.add(new NotificationDTO(
-//                        RequestStatus.VOLUNTEERED,
-//                        "Volunteer " + request.getVolunteer().getUsername() + " is applying to help your request " + request.getTitle() + ".",
-//                        request.getId(),
-//                        user.getId(),
-//                        request.getVolunteer().getId(),
-//                        request.getTitle()
-//                ));
-//            }
-//            else if (request.getStatus() == RequestStatus.COMPLETED && request.getVolunteer() != null) {
-//                notifications.add(new NotificationDTO(
-//                        RequestStatus.COMPLETED,
-//                        "Your request '" + request.getTitle() + "' is completed by volunteer " + request.getVolunteer().getUsername() + "!",
-//                        request.getId(),
-//                        user.getId(),
-//                        request.getVolunteer().getId(),
-//                        request.getTitle()
-//                ));
-//            }
-//        }
-//
-//        List<Request> volunteeredRequests = requestRepository.findByVolunteer(user);
-//        for (Request request : volunteeredRequests) {
-//            if (request.getStatus() == RequestStatus.ACCEPTING) {
-//                notifications.add(new NotificationDTO(
-//                        RequestStatus.ACCEPTING,
-//                        "Your volunteer for request " + request.getTitle() + " is accepted!",
-//                        request.getId(),
-//                        request.getPoster().getId(),
-//                        user.getId(),
-//                        request.getTitle()
-//                ));
-//            }
-//        }
-//        return notifications;
-//    }
 
     public List<Request> getWaitingRequests() {
         List<Request> waitingRequests = requestRepository.findByStatus(RequestStatus.WAITING);
@@ -223,6 +182,10 @@ public class RequestService {
     public void volunteerRequest(Request request, User volunteer) {
         if (request.getPoster().getId().equals(volunteer.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot volunteer for your own request.");
+        }
+
+        if (!request.getStatus().equals(RequestStatus.WAITING)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only volunteer for requests that are still waiting.");
         }
         request.setVolunteer(volunteer);
         request.setStatus(RequestStatus.VOLUNTEERED);
@@ -253,9 +216,13 @@ public class RequestService {
         }
         existingRequest.setFeedback(feedback);
         requestRepository.save(existingRequest);
+
+        notificationService.feedbackNotification(existingRequest);
     }
 
     public List<Request> getRequestByPoster(User user) {
         return requestRepository.findByPoster(user);
     }
+
+
 }

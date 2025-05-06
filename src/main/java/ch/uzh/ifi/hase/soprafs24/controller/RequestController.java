@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,11 +26,13 @@ public class RequestController {
     private final RequestService requestService;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final RequestRepository requestRepository;
 
-    public RequestController(RequestService requestService, UserService userService, UserRepository userRepository) {
+    public RequestController(RequestService requestService, UserService userService, UserRepository userRepository, RequestRepository requestRepository) {
         this.requestService = requestService;
         this.userService = userService;
         this.userRepository = userRepository;
+        this.requestRepository = requestRepository;
     }
 
     @GetMapping
@@ -128,19 +132,6 @@ public class RequestController {
         }
     }
 
-    // @GetMapping("/{requestId}/volunteer")
-    // public ResponseEntity<?> volunteer(@PathVariable Long requestId, @RequestHeader(AUTH_HEADER) String token) {
-    //     try {
-    //         Request request = requestService.getRequestById(requestId);
-    //         User volunteer = userService.getUserByToken(token);
-    //         Long volunteerId = volunteer.getId();
-    //         Long requestPosterId = request.getPoster().getId();
-    //         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToUserGetDTO(request.getVolunteer()));
-    //     } catch (ResponseStatusException ex) {
-    //         return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
-    //     }
-    // }
-
     @GetMapping("/me")
     public List<RequestGetDTO> getRequestByPosterId(@RequestHeader(AUTH_HEADER) String token) {
 
@@ -168,13 +159,6 @@ public class RequestController {
             return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
         }
     }
-
-//    @GetMapping("/notifications")
-//    public List<NotificationDTO> getNotifications(@RequestHeader(AUTH_HEADER) String token) {
-//        User user = userService.getUserByToken(token);
-//        List<NotificationDTO> notifications = notification.getNotifications(user);
-//        return notifications;
-//    }
 
     @GetMapping("/active")
     public List<RequestGetDTO> getActiveRequests() {
@@ -206,5 +190,15 @@ public class RequestController {
         catch (ResponseStatusException ex) {
             return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
         }
+    }
+
+    @GetMapping("/{volunteerId}/feedbacks")
+    public ResponseEntity<List<String>> getFeedbacksByVolunteer(@PathVariable Long volunteerId) {
+        List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
+        List<String> feedbacks = requests.stream()
+                .map(Request::getFeedback)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(feedbacks);
     }
 }

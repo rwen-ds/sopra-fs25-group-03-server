@@ -2,14 +2,9 @@ package ch.uzh.ifi.hase.soprafs24.entity;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
@@ -56,6 +51,9 @@ public class Request implements Serializable {
     @ManyToOne
     @JoinColumn(name = "posterId", nullable = false)
     private User poster;
+
+    @OneToMany(mappedBy = "request", cascade = CascadeType.REMOVE)
+    private List<Notification> notifications;
 
     public Long getId() {
         return id;
@@ -143,5 +141,13 @@ public class Request implements Serializable {
 
     public void setPoster(User poster) {
         this.poster = poster;
+    }
+
+    public List<Notification> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<Notification> notifications) {
+        this.notifications = notifications;
     }
 }

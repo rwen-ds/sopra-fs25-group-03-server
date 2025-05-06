@@ -6,5 +6,6 @@ public enum NotificationType {
     VOLUNTEERING,
     ACCEPTING,
     ACCEPTED,
-    COMPLETED
+    COMPLETED,
+    POSTERCALCEL, VOLUNTEERCALCEL, FEEDBACK
 }

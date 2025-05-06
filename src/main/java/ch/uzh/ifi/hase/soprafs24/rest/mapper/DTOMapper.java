@@ -64,9 +64,10 @@ public interface DTOMapper {
 
     @Mapping(source = "recipient.id", target = "recipientId")
     @Mapping(source = "relatedUser.id", target = "relatedUserId")
+    @Mapping(source = "relatedUser.username", target = "relatedUsername")
     @Mapping(source = "request.id", target = "requestId")
+    @Mapping(source = "request.title", target = "requestTitle")
     @Mapping(source = "type", target = "type")
-    @Mapping(source = "content", target = "content")
     @Mapping(source = "timestamp", target = "timestamp")
     @Mapping(source = "read", target = "read")
     NotificationDTO convertEntityToNotificationDTO(Notification notification);

@@ -1,24 +1,30 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -170,18 +176,21 @@ public class UserServiceTest {
 
     @Test
     public void testLogin_invalidPassword() {
-
+        // 创建测试输入
         User userInput = new User();
         userInput.setUsername("testuser");
         userInput.setPassword("wrongpassword");
 
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("testuser");
-        user.setPassword("password");
-        when(userRepository.findByUsername("testuser")).thenReturn(user);
+        // 创建存储在数据库中的用户
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("testuser");
+        existingUser.setPassword("password");
+        
+        // 设置Mock行为
+        when(userRepository.findByUsername(userInput.getUsername())).thenReturn(existingUser);
 
-
+        // 执行测试并验证异常
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.login(userInput);
         });

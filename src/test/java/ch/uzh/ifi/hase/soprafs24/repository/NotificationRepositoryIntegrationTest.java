@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,7 +15,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
+import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -41,12 +44,20 @@ public class NotificationRepositoryIntegrationTest {
         recipient.setUsername("recipient");
         recipient.setPassword("password");
         recipient.setEmail("recipient@example.com");
+        recipient.setCreationDate(LocalDate.now());
+        recipient.setStatus(UserStatus.OFFLINE);
+        recipient.setToken("token-recipient");
+        recipient.setIsAdmin(false);
         entityManager.persist(recipient);
 
         relatedUser = new User();
         relatedUser.setUsername("volunteer");
         relatedUser.setPassword("password");
         relatedUser.setEmail("volunteer@example.com");
+        relatedUser.setCreationDate(LocalDate.now());
+        relatedUser.setStatus(UserStatus.OFFLINE);
+        relatedUser.setToken("token-volunteer");
+        relatedUser.setIsAdmin(false);
         entityManager.persist(relatedUser);
 
         // 创建请求
@@ -55,6 +66,8 @@ public class NotificationRepositoryIntegrationTest {
         request.setDescription("Need help with something");
         request.setPoster(recipient);
         request.setStatus(RequestStatus.WAITING);
+        request.setCreationDate(LocalDate.now());
+        request.setEmergencyLevel(RequestEmergencyLevel.MEDIUM);
         entityManager.persist(request);
 
         // 创建通知

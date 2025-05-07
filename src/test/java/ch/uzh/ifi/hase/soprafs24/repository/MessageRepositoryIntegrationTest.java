@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,6 +41,9 @@ public class MessageRepositoryIntegrationTest {
         sender.setPassword("password");
         sender.setEmail("sender@example.com");
         sender.setStatus(UserStatus.ONLINE);
+        sender.setCreationDate(LocalDate.now());
+        sender.setToken("token-sender");
+        sender.setIsAdmin(false);
         entityManager.persist(sender);
         
         // 创建接收者
@@ -48,6 +52,9 @@ public class MessageRepositoryIntegrationTest {
         recipient.setPassword("password");
         recipient.setEmail("recipient@example.com");
         recipient.setStatus(UserStatus.ONLINE);
+        recipient.setCreationDate(LocalDate.now());
+        recipient.setToken("token-recipient");
+        recipient.setIsAdmin(false);
         entityManager.persist(recipient);
         
         // 创建消息
@@ -100,6 +107,9 @@ public class MessageRepositoryIntegrationTest {
         thirdUser.setPassword("password");
         thirdUser.setEmail("third@example.com");
         thirdUser.setStatus(UserStatus.ONLINE);
+        thirdUser.setCreationDate(LocalDate.now());
+        thirdUser.setToken("token-third");
+        thirdUser.setIsAdmin(false);
         entityManager.persist(thirdUser);
         
         Message anotherMessage = new Message();

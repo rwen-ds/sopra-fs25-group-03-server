@@ -1,24 +1,18 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
-    List<Notification> findByRecipientOrderByTimestampDesc(User recipient);
+    List<Notification> findByRecipientIdOrderByTimestampDesc(Long recipientId);
 
-    List<Notification> findByRecipientAndIsReadFalse(User user);
+    List<Notification> findByRecipientIdAndIsReadFalse(Long recipientId);
 
-    boolean existsByRecipientAndIsReadFalse(User recipient);
+    boolean existsByRecipientIdAndIsReadFalse(Long recipientId);
 
-    void deleteByRequestId(Long requestId);
 
-    void deleteByRecipientId(Long userId);
-
-    void deleteByRelatedUserId(Long userId);
 }

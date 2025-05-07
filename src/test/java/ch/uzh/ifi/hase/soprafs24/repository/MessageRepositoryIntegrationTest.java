@@ -1,14 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 public class MessageRepositoryIntegrationTest {
-        
-    @Autowired
-    private MessageRepository messageRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+//    @Autowired
+//    private MessageRepository messageRepository;
+//
+//    @Autowired
+//    private UserRepository userRepository;
 
     // @Test
     // public void testSaveMessage() {

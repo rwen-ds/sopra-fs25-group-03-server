@@ -1,13 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
-import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,15 +22,10 @@ public class RequestController {
 
     private static final String AUTH_HEADER = "token";
     private final RequestService requestService;
-    private final UserService userService;
-    private final UserRepository userRepository;
-    private final RequestRepository requestRepository;
 
-    public RequestController(RequestService requestService, UserService userService, UserRepository userRepository, RequestRepository requestRepository) {
+
+    public RequestController(RequestService requestService) {
         this.requestService = requestService;
-        this.userService = userService;
-        this.userRepository = userRepository;
-        this.requestRepository = requestRepository;
     }
 
     @GetMapping
@@ -134,11 +127,8 @@ public class RequestController {
 
     @GetMapping("/me")
     public List<RequestGetDTO> getRequestByPosterId(@RequestHeader(AUTH_HEADER) String token) {
-
-        User user = userRepository.findByToken(token);
-
         List<RequestGetDTO> requestGetDTOs = new ArrayList<>();
-        List<Request> requests = requestService.getRequestByPoster(user);
+        List<Request> requests = requestService.getRequestByPoster(token);
 
         // convert each user to the API representation
         for (Request request : requests) {
@@ -150,9 +140,7 @@ public class RequestController {
     @PutMapping("/{requestId}/volunteer")
     public ResponseEntity<?> volunteer(@PathVariable Long requestId, @RequestHeader(AUTH_HEADER) String token) {
         try {
-            Request request = requestService.getRequestById(requestId);
-            User volunteer = userService.getUserByToken(token);
-            requestService.volunteerRequest(request, volunteer);
+            requestService.volunteerRequest(requestId, token);
             return ResponseEntity.ok().build();
         }
         catch (ResponseStatusException ex) {
@@ -194,11 +182,7 @@ public class RequestController {
 
     @GetMapping("/{volunteerId}/feedbacks")
     public ResponseEntity<List<String>> getFeedbacksByVolunteer(@PathVariable Long volunteerId) {
-        List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
-        List<String> feedbacks = requests.stream()
-                .map(Request::getFeedback)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<String> feedbacks = requestService.getFeedbackById(volunteerId);
         return ResponseEntity.ok(feedbacks);
     }
 }

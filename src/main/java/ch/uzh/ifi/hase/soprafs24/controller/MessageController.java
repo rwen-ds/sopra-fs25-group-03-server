@@ -1,18 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MessageService;
-import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,63 +19,68 @@ import java.util.stream.Collectors;
 public class MessageController {
 
     private final MessageService messageService;
-    private final UserService userService;
-    private final UserRepository userRepository;
     private static final String AUTH_HEADER = "token";
-    private final MessageRepository messageRepository;
 
-    public MessageController(MessageService messageService, UserService userService, UserRepository userRepository, MessageRepository messageRepository) {
+    public MessageController(MessageService messageService) {
         this.messageService = messageService;
-        this.userService = userService;
-        this.userRepository = userRepository;
-        this.messageRepository = messageRepository;
     }
 
     @PutMapping("/mark-read/{senderId}/{recipientId}")
-    public ResponseEntity<Void> markMessageAsRead(
+    public ResponseEntity<?> markMessageAsRead(
             @PathVariable Long senderId,
             @PathVariable Long recipientId) {
-        messageService.markMessageAsRead(senderId, recipientId);
-
-        return ResponseEntity.noContent().build();
+        try {
+            messageService.markMessageAsRead(senderId, recipientId);
+            return ResponseEntity.noContent().build();
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
     }
 
     @GetMapping("/unread")
-    public ResponseEntity<Map<String, Boolean>> hasUnreadMessages(@RequestHeader(AUTH_HEADER) String token) {
-        User user = userRepository.findByToken(token);
-
-        boolean hasUnread = messageRepository.existsUnreadByRecipientId(user.getId());
-
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("hasUnread", hasUnread);
-
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> hasUnreadMessages(@RequestHeader(AUTH_HEADER) String token) {
+        try {
+            Map<String, Boolean> response = messageService.hasUnreadMessage(token);
+            return ResponseEntity.ok(response);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
     }
 
 
     @GetMapping("/conversation/{senderId}/{recipientId}")
-    public ResponseEntity<List<MessageDTO>> getConversationMessages(@PathVariable Long senderId,
-                                                                 @PathVariable Long recipientId){
-        List<Message> conversation = messageService.getConversation(senderId, recipientId);
+    public ResponseEntity<?> getConversationMessages(@PathVariable Long senderId,
+                                                     @PathVariable Long recipientId) {
+        try {
+            List<Message> conversation = messageService.getConversation(senderId, recipientId);
+            List<MessageDTO> messageDTOs = conversation.stream().map(msg -> {
+                return new MessageDTO(
+                        msg.getSender().getId(),
+                        msg.getRecipient().getId(),
+                        msg.getContent(),
+                        msg.getTimestamp(),
+                        msg.isRead()
+                );
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(messageDTOs);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
 
-        List<MessageDTO> messageDTOs = conversation.stream().map(msg -> {
-            return new MessageDTO(
-                    msg.getSender().getId(),
-                    msg.getRecipient().getId(),
-                    msg.getContent(),
-                    msg.getTimestamp(),
-                    msg.isRead()
-            );
-        }).collect(Collectors.toList());
-
-        return ResponseEntity.ok(messageDTOs);
     }
 
     @GetMapping("/contacts")
-    public ResponseEntity<List<ContactDTO>> getChatContacts(@RequestHeader(AUTH_HEADER) String token){
-        User user = userService.getUserByToken(token);
-        List<ContactDTO> contacts = messageService.getChatContacts(user.getId());
-        return ResponseEntity.ok(contacts);
+    public ResponseEntity<?> getChatContacts(@RequestHeader(AUTH_HEADER) String token) {
+        try {
+            List<ContactDTO> contacts = messageService.getChatContacts(token);
+            return ResponseEntity.ok(contacts);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
     }
 
     @GetMapping("/poll/{userId}")
@@ -91,6 +93,4 @@ public class MessageController {
         messageService.chat(messageDTO);
         return "sent";
     }
-
-
 }

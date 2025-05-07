@@ -256,7 +256,7 @@ public class UserServiceIntegrationTest {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
             userService.getUserByToken("nonExistingToken");
         });
-        assertTrue(ex.getMessage().contains("Invalid user"));
+        assertTrue(ex.getMessage().contains("Invalid token"));
     }
 
 

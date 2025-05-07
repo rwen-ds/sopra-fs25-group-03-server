@@ -1,30 +1,24 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -33,7 +27,7 @@ public class UserServiceTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private UserService userService;  
+    private UserService userService;
 
     @Test
     public void testGetUsers_success() {
@@ -76,7 +70,7 @@ public class UserServiceTest {
 
     @Test
     public void testCreateUser_conflict_username() {
-        
+
         User newUser = new User();
         newUser.setUsername("testuser");
         newUser.setEmail("test@example.com");
@@ -184,7 +178,7 @@ public class UserServiceTest {
         User user = new User();
         user.setId(1L);
         user.setUsername("testuser");
-        user.setPassword("password"); 
+        user.setPassword("password");
         when(userRepository.findByUsername("testuser")).thenReturn(user);
 
 
@@ -238,7 +232,7 @@ public class UserServiceTest {
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.getUserByToken("notFoundToken");
         });
-        assertTrue(exception.getMessage().contains("Invalid user"));
+        assertTrue(exception.getMessage().contains("Invalid token"));
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,14 +24,24 @@ public class MessageService {
 
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
+    private final UserService userService;
 
     @Autowired
-    public MessageService(UserRepository userRepository, MessageRepository messageRepository) {
+    public MessageService(UserRepository userRepository, MessageRepository messageRepository, UserService userService) {
         this.userRepository = userRepository;
         this.messageRepository = messageRepository;
+        this.userService = userService;
     }
 
     private final Map<Long, DeferredResult<String>> waitingUsers = new ConcurrentHashMap<>();
+
+    public Map<String, Boolean> hasUnreadMessage(String token) {
+        User user = userService.getUserByToken(token);
+        boolean hasUnread = messageRepository.existsUnreadByRecipientId(user.getId());
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("hasUnread", hasUnread);
+        return response;
+    }
 
     public void markMessageAsRead(Long senderId, Long recipientId) {
         List<Message> messages = messageRepository
@@ -46,11 +57,13 @@ public class MessageService {
         if (senderId.equals(recipientId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot get conversation with self");
         }
-        return messageRepository.findConversation(senderId, recipientId);
+        List<Message> conversation = messageRepository.findConversation(senderId, recipientId);
+        return conversation;
     }
 
-    public List<ContactDTO> getChatContacts(Long userId) {
-        List<Long> partnerIds = messageRepository.findDistinctChatPartnerIds(userId);
+    public List<ContactDTO> getChatContacts(String token) {
+        User currentUser = userService.getUserByToken(token);
+        List<Long> partnerIds = messageRepository.findDistinctChatPartnerIds(currentUser.getId());
         List<ContactDTO> contactDTOs = new ArrayList<>();
 
         for (Long partnerId : partnerIds) {
@@ -58,7 +71,7 @@ public class MessageService {
             if (user == null) continue;
 
             // get the last message
-            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(userId, partnerId);
+            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(currentUser.getId(), partnerId);
             Message lastMessage = messages.isEmpty() ? null : messages.get(0);
             String preview = lastMessage != null ? lastMessage.getContent() : null;
 

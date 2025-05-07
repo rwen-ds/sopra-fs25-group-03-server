@@ -3,7 +3,6 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.slf4j.Logger;
@@ -16,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -26,14 +27,16 @@ public class RequestService {
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final UserService userService;
 //    private String adminToken; // This should be replaced with a secure token management system
 
 
     @Autowired
-    public RequestService(RequestRepository requestRepository, UserRepository userRepository, NotificationService notificationService) {
+    public RequestService(RequestRepository requestRepository, UserRepository userRepository, NotificationService notificationService, UserService userService) {
         this.requestRepository = requestRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.userService = userService;
     }
 
     public List<Request> getRequests(String token) {
@@ -161,7 +164,7 @@ public class RequestService {
             }
             notificationService.posterCancelNotification(existingRequest);
         }
-       else if (volunteer.getToken().equals(token)) {
+        else if (volunteer.getToken().equals(token)) {
             if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED && existingRequest.getStatus() != RequestStatus.ACCEPTING) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It's not volunteered");
             }
@@ -179,7 +182,9 @@ public class RequestService {
         return waitingRequests;
     }
 
-    public void volunteerRequest(Request request, User volunteer) {
+    public void volunteerRequest(Long requestId, String token) {
+        Request request = getRequestById(requestId);
+        User volunteer = userService.getUserByToken(token);
         if (request.getPoster().getId().equals(volunteer.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot volunteer for your own request.");
         }
@@ -220,8 +225,18 @@ public class RequestService {
         notificationService.feedbackNotification(existingRequest);
     }
 
-    public List<Request> getRequestByPoster(User user) {
+    public List<Request> getRequestByPoster(String token) {
+        User user = userService.getUserByToken(token);
         return requestRepository.findByPoster(user);
+    }
+
+    public List<String> getFeedbackById(Long volunteerId) {
+        List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
+        List<String> feedbacks = requests.stream()
+                .map(Request::getFeedback)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return feedbacks;
     }
 
 

@@ -23,7 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -112,7 +113,7 @@ public class MessageControllerTest {
 
         // Mock the service calls
         when(userService.getUserByToken(token)).thenReturn(user);
-        when(messageService.getChatContacts(userId)).thenReturn(Arrays.asList(contact1, contact2));
+        when(messageService.getChatContacts(token)).thenReturn(Arrays.asList(contact1, contact2));
 
         mockMvc.perform(get("/messages/contacts")
                         .header("token", token))  // Simulate the Authorization header

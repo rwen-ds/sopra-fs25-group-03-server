@@ -1,14 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
+import ch.uzh.ifi.hase.soprafs24.entity.Request;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
-
-import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.entity.Message;
 
 /**
  * DTOMapper
@@ -24,47 +22,47 @@ import ch.uzh.ifi.hase.soprafs24.entity.Message;
 @Mapper
 public interface DTOMapper {
 
-  DTOMapper INSTANCE = Mappers.getMapper(DTOMapper.class);
+    DTOMapper INSTANCE = Mappers.getMapper(DTOMapper.class);
 
-  @Mapping(source = "username", target = "username")
-  @Mapping(source = "email", target = "email")
-  @Mapping(source = "password", target = "password")
-  User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
+    @Mapping(source = "username", target = "username")
+    @Mapping(source = "email", target = "email")
+    @Mapping(source = "password", target = "password")
+    User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
-  @Mapping(source = "id", target = "id")
-  @Mapping(source = "email", target = "email")
-  @Mapping(source = "username", target = "username")
-  @Mapping(source = "status", target = "status")
-  @Mapping(source = "gender", target = "gender")
-  @Mapping(source = "school", target = "school")
-  @Mapping(source = "age", target = "age")
-  @Mapping(source = "language", target = "language")
-  @Mapping(source = "isAdmin", target = "isAdmin")
-  UserGetDTO convertEntityToUserGetDTO(User user); // Birthday?
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "email", target = "email")
+    @Mapping(source = "username", target = "username")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "gender", target = "gender")
+    @Mapping(source = "school", target = "school")
+    @Mapping(source = "age", target = "age")
+    @Mapping(source = "language", target = "language")
+    @Mapping(source = "isAdmin", target = "isAdmin")
+    UserGetDTO convertEntityToUserGetDTO(User user); // Birthday?
 
-  @Mapping(source = "title", target = "title")
-  @Mapping(source = "description", target = "description")
-  @Mapping(source = "contactInfo", target = "contactInfo")
-  @Mapping(source = "location", target = "location")
-  @Mapping(source = "emergencyLevel", target = "emergencyLevel")
-  Request convertRequestPostDTOtoEntity(RequestPostDTO requestPostDTO);
+    @Mapping(source = "title", target = "title")
+    @Mapping(source = "description", target = "description")
+    @Mapping(source = "contactInfo", target = "contactInfo")
+    @Mapping(source = "location", target = "location")
+    @Mapping(source = "emergencyLevel", target = "emergencyLevel")
+    Request convertRequestPostDTOtoEntity(RequestPostDTO requestPostDTO);
 
-  @Mapping(source = "id", target = "id")
-  @Mapping(source = "title", target = "title")
-  @Mapping(source = "description", target = "description")
-  @Mapping(source = "contactInfo", target = "contactInfo")
-  @Mapping(source = "feedback", target = "feedback")
-  @Mapping(source = "status", target = "status")
-  @Mapping(source = "emergencyLevel", target = "emergencyLevel")
-  @Mapping(source = "location", target = "location")
-  @Mapping(source = "creationDate", target = "creationDate")
-  @Mapping(source = "poster.id", target = "posterId")
-  @Mapping(source = "volunteer.id", target = "volunteerId")
-  RequestGetDTO convertEntityToRequestGetDTO(Request request);
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "title", target = "title")
+    @Mapping(source = "description", target = "description")
+    @Mapping(source = "contactInfo", target = "contactInfo")
+    @Mapping(source = "feedback", target = "feedback")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "emergencyLevel", target = "emergencyLevel")
+    @Mapping(source = "location", target = "location")
+    @Mapping(source = "creationDate", target = "creationDate")
+    @Mapping(source = "poster.id", target = "posterId")
+    @Mapping(source = "volunteer.id", target = "volunteerId")
+    RequestGetDTO convertEntityToRequestGetDTO(Request request);
 
-    @Mapping(source = "recipient.id", target = "recipientId")
-    @Mapping(source = "relatedUser.id", target = "relatedUserId")
-    @Mapping(source = "relatedUser.username", target = "relatedUsername")
+    @Mapping(source = "recipientId", target = "recipientId")
+    @Mapping(source = "relatedUserId", target = "relatedUserId")
+    @Mapping(source = "relatedUsername", target = "relatedUsername")
     @Mapping(source = "request.id", target = "requestId")
     @Mapping(source = "request.title", target = "requestTitle")
     @Mapping(source = "type", target = "type")

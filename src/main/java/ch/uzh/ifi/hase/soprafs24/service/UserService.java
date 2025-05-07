@@ -2,8 +2,6 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import org.slf4j.Logger;
@@ -18,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -102,10 +99,8 @@ public class UserService {
 
     // update user
     public void updateUser(Long userId, UserPutDTO userPutDTO, String token) {
-        User loginUser = userRepository.findByToken(token);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "The user with id " + userId + " was not found"));
+        User loginUser = getUserByToken(token);
+        User user = getUserById(userId);
         if (loginUser == null || (!Objects.equals(loginUser.getId(), userId) && !loginUser.getUsername().equals("admin"))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
         }
@@ -176,11 +171,7 @@ public class UserService {
 
     public void logout(String token) {
         // find the logout user by token
-        User user = userRepository.findByToken(token);
-        // if the user is not exist
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
-        }
+        User user = getUserByToken(token);
         // set status to offline
         user.setStatus(UserStatus.OFFLINE);
 
@@ -192,16 +183,14 @@ public class UserService {
         // return user info by the token
         User user = userRepository.findByToken(token);
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid user");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
         }
         return user;
     }
 
     public void deleteUser(Long userId, String token) {
-        User deleteUser = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "The user with id " + userId + " was not found"));
-        User currentUser = userRepository.findByToken(token);
+        User deleteUser = getUserById(userId);
+        User currentUser = getUserByToken(token);
         if (currentUser == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid token");
         }

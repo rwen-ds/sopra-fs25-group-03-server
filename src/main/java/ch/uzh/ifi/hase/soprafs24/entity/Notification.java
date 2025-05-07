@@ -15,13 +15,11 @@ public class Notification implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "recipient_id", nullable = false)
-    private User recipient;
+    private Long recipientId;
 
-    @ManyToOne
-    @JoinColumn(name = "related_user_id")
-    private User relatedUser;
+    private Long relatedUserId;
+
+    private String relatedUsername;
 
     @ManyToOne
     @JoinColumn(nullable = false)
@@ -44,12 +42,28 @@ public class Notification implements Serializable {
         this.id = id;
     }
 
-    public User getRecipient() {
-        return recipient;
+    public Long getRecipientId() {
+        return recipientId;
     }
 
-    public void setRecipient(User recipient) {
-        this.recipient = recipient;
+    public void setRecipientId(Long recipientId) {
+        this.recipientId = recipientId;
+    }
+
+    public Long getRelatedUserId() {
+        return relatedUserId;
+    }
+
+    public void setRelatedUserId(Long relatedUserId) {
+        this.relatedUserId = relatedUserId;
+    }
+
+    public String getRelatedUsername() {
+        return relatedUsername;
+    }
+
+    public void setRelatedUsername(String relatedUsername) {
+        this.relatedUsername = relatedUsername;
     }
 
     public Request getRequest() {
@@ -58,6 +72,14 @@ public class Notification implements Serializable {
 
     public void setRequest(Request request) {
         this.request = request;
+    }
+
+    public NotificationType getType() {
+        return type;
+    }
+
+    public void setType(NotificationType type) {
+        this.type = type;
     }
 
     public LocalDateTime getTimestamp() {
@@ -74,21 +96,5 @@ public class Notification implements Serializable {
 
     public void setRead(boolean read) {
         isRead = read;
-    }
-
-    public NotificationType getType() {
-        return type;
-    }
-
-    public void setType(NotificationType type) {
-        this.type = type;
-    }
-
-    public User getRelatedUser() {
-        return relatedUser;
-    }
-
-    public void setRelatedUser(User relatedUser) {
-        this.relatedUser = relatedUser;
     }
 }

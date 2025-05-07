@@ -1,19 +1,19 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.entity.Message;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import ch.uzh.ifi.hase.soprafs24.entity.Message;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class MessageServiceTest {

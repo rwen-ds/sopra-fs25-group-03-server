@@ -11,31 +11,31 @@ import java.util.List;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("SELECT m FROM Message m " +
-            "WHERE m.sender.id = :senderId AND m.recipient.id = :recipientId AND m.isRead = false")
+            "WHERE m.senderId = :senderId AND m.recipientId = :recipientId AND m.isRead = false")
     List<Message> findBySenderIdAndRecipientIdAndIsReadFalse(@Param("senderId") Long senderId,
                                                              @Param("recipientId") Long recipientId);
 
     @Query("SELECT m FROM Message m " +
-            "WHERE (m.sender.id = :senderId AND m.recipient.id = :recipientId) " +
-            "   OR (m.sender.id = :recipientId AND m.recipient.id = :senderId) " +
+            "WHERE (m.senderId = :senderId AND m.recipientId = :recipientId) " +
+            "   OR (m.senderId = :recipientId AND m.recipientId = :senderId) " +
             "ORDER BY m.timestamp ASC")
     List<Message> findConversation(@Param("senderId") Long senderId,
                                    @Param("recipientId") Long recipientId);
 
     @Query("SELECT DISTINCT " +
-            "CASE WHEN m.sender.id = :userId THEN m.recipient.id ELSE m.sender.id END " +
+            "CASE WHEN m.senderId = :userId THEN m.recipientId ELSE m.senderId END " +
             "FROM Message m " +
-            "WHERE m.sender.id = :userId OR m.recipient.id = :userId")
+            "WHERE m.senderId = :userId OR m.recipientId = :userId")
     List<Long> findDistinctChatPartnerIds(@Param("userId") Long userId);
 
 
     @Query("SELECT m FROM Message m " +
-            "WHERE (m.sender.id = :userId1 AND m.recipient.id = :userId2) " +
-            "   OR (m.sender.id = :userId2 AND m.recipient.id = :userId1) " +
+            "WHERE (m.senderId = :userId1 AND m.recipientId = :userId2) " +
+            "   OR (m.senderId = :userId2 AND m.recipientId = :userId1) " +
             "ORDER BY m.timestamp DESC")
     List<Message> findTopByUserPairOrderByTimestampDesc(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
-    @Query("SELECT COUNT(m) > 0 FROM Message m WHERE m.recipient.id = :recipientId AND m.isRead = false")
+    @Query("SELECT COUNT(m) > 0 FROM Message m WHERE m.recipientId = :recipientId AND m.isRead = false")
     boolean existsUnreadByRecipientId(@Param("recipientId") Long recipientId);
 
 }

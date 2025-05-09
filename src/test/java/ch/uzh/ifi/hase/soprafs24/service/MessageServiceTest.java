@@ -1,19 +1,18 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import ch.uzh.ifi.hase.soprafs24.entity.Message;
+import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import ch.uzh.ifi.hase.soprafs24.entity.Message;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class MessageServiceTest {
@@ -32,20 +31,14 @@ public class MessageServiceTest {
         Long senderId = 1L;
         Long recipientId = 2L;
 
-        User sender = new User();
-        sender.setId(senderId);
-
-        User recipient = new User();
-        recipient.setId(recipientId);
-
         Message message1 = new Message();
-        message1.setSender(sender);
-        message1.setRecipient(recipient);
+        message1.setSenderId(senderId);
+        message1.setRecipientId(recipientId);
         message1.setContent("Hello");
 
         Message message2 = new Message();
-        message2.setSender(recipient);
-        message2.setRecipient(sender);
+        message2.setSenderId(recipientId);
+        message2.setRecipientId(senderId);
         message2.setContent("Hi");
 
         when(messageRepository.findConversation(senderId, recipientId)).thenReturn(Arrays.asList(message1, message2));

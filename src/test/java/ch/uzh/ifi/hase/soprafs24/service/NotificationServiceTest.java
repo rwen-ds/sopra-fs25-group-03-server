@@ -1,29 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
-import static org.mockito.ArgumentMatchers.any;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
@@ -32,6 +8,22 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -61,22 +53,22 @@ public class NotificationServiceTest {
     @BeforeEach
     public void setup() {
         token = "validToken";
-        
+
         poster = new User();
         poster.setId(1L);
         poster.setUsername("poster");
-        
+
         volunteer = new User();
         volunteer.setId(2L);
         volunteer.setUsername("volunteer");
-        
+
         request = new Request();
         request.setId(1L);
         request.setTitle("Help request");
         request.setDescription("Need help with something");
         request.setPoster(poster);
         request.setStatus(RequestStatus.WAITING);
-        
+
         notification = new Notification();
         notification.setId(1L);
         notification.setRecipientId(poster.getId());
@@ -92,83 +84,83 @@ public class NotificationServiceTest {
     public void volunteerNotification_createsCorrectNotifications() {
         // 当调用save方法时，直接返回保存的通知对象
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.volunteerNotification(request, volunteer);
-        
+
         // 验证save方法被调用了两次
         verify(notificationRepository, times(2)).save(notificationCaptor.capture());
-        
+
         List<Notification> capturedNotifications = notificationCaptor.getAllValues();
         assertEquals(2, capturedNotifications.size());
-        
+
         // 第一个通知：给poster的通知
         assertEquals(poster.getId(), capturedNotifications.get(0).getRecipientId());
         assertEquals(volunteer.getId(), capturedNotifications.get(0).getRelatedUserId());
         assertEquals(NotificationType.VOLUNTEERED, capturedNotifications.get(0).getType());
-        
+
         // 第二个通知：给volunteer的通知
         assertEquals(volunteer.getId(), capturedNotifications.get(1).getRecipientId());
         assertEquals(poster.getId(), capturedNotifications.get(1).getRelatedUserId());
         assertEquals(NotificationType.VOLUNTEERING, capturedNotifications.get(1).getType());
     }
-    
+
     @Test
     public void acceptNotification_createsCorrectNotifications() {
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.acceptNotification(request, volunteer);
-        
+
         verify(notificationRepository, times(2)).save(notificationCaptor.capture());
-        
+
         List<Notification> capturedNotifications = notificationCaptor.getAllValues();
         assertEquals(2, capturedNotifications.size());
-        
+
         assertEquals(NotificationType.ACCEPTING, capturedNotifications.get(0).getType());
         assertEquals(NotificationType.ACCEPTED, capturedNotifications.get(1).getType());
     }
-    
+
     @Test
     public void completeNotification_createsCorrectNotification() {
         request.setVolunteer(volunteer);
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.completeNotification(request);
-        
+
         verify(notificationRepository, times(1)).save(notificationCaptor.capture());
-        
+
         Notification capturedNotification = notificationCaptor.getValue();
         assertEquals(poster.getId(), capturedNotification.getRecipientId());
         assertEquals(volunteer.getId(), capturedNotification.getRelatedUserId());
         assertEquals(NotificationType.COMPLETED, capturedNotification.getType());
     }
-    
+
     @Test
     public void markNotificationsAsRead_marksAllUnreadNotifications() {
         List<Notification> unreadNotifications = new ArrayList<>();
         unreadNotifications.add(notification);
-        
+
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.findByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(unreadNotifications);
-        
+
         notificationService.markNotificationsAsRead(token);
-        
+
         // 验证所有通知都被标记为已读
-        verify(notificationRepository).saveAll(ArgumentMatchers.argThat(list -> 
-            ((List<Notification>)list).stream().allMatch(Notification::isRead)
+        verify(notificationRepository).saveAll(ArgumentMatchers.argThat(list ->
+                ((List<Notification>) list).stream().allMatch(Notification::isRead)
         ));
     }
-    
+
     @Test
     public void getNotificationDTOS_returnsCorrectDTOs() {
         // 准备数据
         List<Notification> notifications = new ArrayList<>();
         notifications.add(notification);
-        
+
         NotificationDTO notificationDTO = new NotificationDTO();
         notificationDTO.setRecipientId(notification.getRecipientId());
         notificationDTO.setType(notification.getType());
         notificationDTO.setRequestId(request.getId());
-        
+
         // 调整 NotificationService 类的实现以允许测试
         // 创建测试专用的NotificationService实例，覆盖依赖于静态方法的代码
         NotificationService testService = new NotificationService(notificationRepository, userService) {
@@ -176,7 +168,7 @@ public class NotificationServiceTest {
             public List<NotificationDTO> getNotificationDTOS(String token) {
                 User user = userService.getUserByToken(token);
                 List<Notification> notifs = notificationRepository.findByRecipientIdOrderByTimestampDesc(user.getId());
-                
+
                 // 直接创建DTO而不使用静态映射器
                 List<NotificationDTO> dtos = new ArrayList<>();
                 for (Notification n : notifs) {
@@ -189,81 +181,81 @@ public class NotificationServiceTest {
                 return dtos;
             }
         };
-        
+
         // 模拟存储库和服务
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.findByRecipientIdOrderByTimestampDesc(poster.getId())).thenReturn(notifications);
-        
+
         // 调用被测试方法
         List<NotificationDTO> result = testService.getNotificationDTOS(token);
-        
+
         // 验证结果
         assertEquals(1, result.size());
         assertEquals(notification.getRecipientId(), result.get(0).getRecipientId());
         assertEquals(notification.getType(), result.get(0).getType());
     }
-    
+
     @Test
     public void getResponse_returnsCorrectHasUnreadStatus() {
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(true);
-        
+
         Map<String, Boolean> response = notificationService.getResponse(token);
-        
+
         assertTrue(response.containsKey("hasUnread"));
         assertTrue(response.get("hasUnread"));
-        
+
         // 测试无未读通知的情况
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(false);
-        
+
         response = notificationService.getResponse(token);
-        
+
         assertTrue(response.containsKey("hasUnread"));
         assertFalse(response.get("hasUnread"));
     }
-    
+
     @Test
     public void feedbackNotification_createsCorrectNotification() {
         request.setVolunteer(volunteer);
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.feedbackNotification(request);
-        
+
         verify(notificationRepository, times(1)).save(notificationCaptor.capture());
-        
+
         Notification capturedNotification = notificationCaptor.getValue();
         assertEquals(volunteer.getId(), capturedNotification.getRecipientId());
         assertEquals(poster.getId(), capturedNotification.getRelatedUserId());
         assertEquals(NotificationType.FEEDBACK, capturedNotification.getType());
     }
-    
+
     @Test
     public void posterCancelNotification_createsCorrectNotification() {
         request.setVolunteer(volunteer);
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.posterCancelNotification(request);
-        
+
         verify(notificationRepository, times(1)).save(notificationCaptor.capture());
-        
+
         Notification capturedNotification = notificationCaptor.getValue();
         assertEquals(volunteer.getId(), capturedNotification.getRecipientId());
         assertEquals(poster.getId(), capturedNotification.getRelatedUserId());
-        assertEquals(NotificationType.POSTERCALCEL, capturedNotification.getType());
+        assertEquals(NotificationType.POSTERCANCEL, capturedNotification.getType());
     }
-    
+
     @Test
     public void volunteerCancelNotification_createsCorrectNotification() {
         request.setVolunteer(volunteer);
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
-        
+
         notificationService.volunteerCancelNotification(request);
-        
+
         verify(notificationRepository, times(1)).save(notificationCaptor.capture());
-        
+
         Notification capturedNotification = notificationCaptor.getValue();
         assertEquals(poster.getId(), capturedNotification.getRecipientId());
         assertEquals(volunteer.getId(), capturedNotification.getRelatedUserId());
-        assertEquals(NotificationType.VOLUNTEERCALCEL, capturedNotification.getType());
+        assertEquals(NotificationType.VOLUNTEERCANCEL, capturedNotification.getType());
     }
 } 

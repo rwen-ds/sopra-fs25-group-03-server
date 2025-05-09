@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -126,15 +125,17 @@ public class RequestController {
     }
 
     @GetMapping("/me")
-    public List<RequestGetDTO> getRequestByPosterId(@RequestHeader(AUTH_HEADER) String token) {
-        List<RequestGetDTO> requestGetDTOs = new ArrayList<>();
-        List<Request> requests = requestService.getRequestByPoster(token);
-
-        // convert each user to the API representation
-        for (Request request : requests) {
-            requestGetDTOs.add(DTOMapper.INSTANCE.convertEntityToRequestGetDTO(request));
+    public ResponseEntity<?> getRequestByPosterId(@RequestHeader(AUTH_HEADER) String token) {
+        try {
+            List<RequestGetDTO> requestGetDTOs = requestService.getRequestByPoster(token).stream()
+                    .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(requestGetDTOs);
         }
-        return requestGetDTOs;
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
+
     }
 
     @PutMapping("/{requestId}/volunteer")
@@ -149,13 +150,17 @@ public class RequestController {
     }
 
     @GetMapping("/active")
-    public List<RequestGetDTO> getActiveRequests() {
-        List<RequestGetDTO> requestGetDTOs = new ArrayList<>();
-        List<Request> activeRequests = requestService.getWaitingRequests();
-        for (Request request : activeRequests) {
-            requestGetDTOs.add(DTOMapper.INSTANCE.convertEntityToRequestGetDTO(request));
+    public ResponseEntity<?> getActiveRequests() {
+        try {
+            List<Request> activeRequests = requestService.getWaitingRequests();
+            List<RequestGetDTO> requestGetDTOs = activeRequests.stream()
+                    .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(requestGetDTOs);
         }
-        return requestGetDTOs;
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
     }
 
     @PutMapping("/{requestId}/done")
@@ -181,8 +186,13 @@ public class RequestController {
     }
 
     @GetMapping("/{volunteerId}/feedbacks")
-    public ResponseEntity<List<String>> getFeedbacksByVolunteer(@PathVariable Long volunteerId) {
-        List<String> feedbacks = requestService.getFeedbackById(volunteerId);
-        return ResponseEntity.ok(feedbacks);
+    public ResponseEntity<?> getFeedbacksByVolunteer(@PathVariable Long volunteerId) {
+        try {
+            List<String> feedbacks = requestService.getFeedbackById(volunteerId);
+            return ResponseEntity.ok(feedbacks);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
     }
 }

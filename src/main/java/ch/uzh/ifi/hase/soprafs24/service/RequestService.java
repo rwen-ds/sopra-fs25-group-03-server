@@ -4,7 +4,6 @@ import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,22 +24,19 @@ public class RequestService {
     private final Logger log = LoggerFactory.getLogger(RequestService.class);
 
     private final RequestRepository requestRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final UserService userService;
-//    private String adminToken; // This should be replaced with a secure token management system
 
 
     @Autowired
-    public RequestService(RequestRepository requestRepository, UserRepository userRepository, NotificationService notificationService, UserService userService) {
+    public RequestService(RequestRepository requestRepository, NotificationService notificationService, UserService userService) {
         this.requestRepository = requestRepository;
-        this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.userService = userService;
     }
 
     public List<Request> getRequests(String token) {
-        User user = userRepository.findByToken(token);
+        User user = userService.getUserByToken(token);
         if (!user.getUsername().equals("admin")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
@@ -51,8 +47,7 @@ public class RequestService {
 
         newRequest.setStatus(RequestStatus.WAITING);
         newRequest.setCreationDate(LocalDate.now());
-        newRequest.setPoster(userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + userId)));
+        newRequest.setPoster(userService.getUserById(userId));
 
         if (newRequest.getTitle() == null || newRequest.getTitle().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be empty");
@@ -79,7 +74,7 @@ public class RequestService {
 
     public Request updateRequest(Long id, Request updatedRequest, String token) {
         Request existingRequest = getRequestById(id);
-        User user = userRepository.findByToken(token);
+        User user = userService.getUserByToken(token);
         if (!user.getUsername().equals("admin") && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
@@ -111,7 +106,7 @@ public class RequestService {
     }
 
     public void deleteRequest(Long id, String token) {
-        User user = userRepository.findByToken(token);
+        User user = userService.getUserByToken(token);
         Request existingRequest = getRequestById(id);
         if (!user.getUsername().equals("admin") && !existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
@@ -124,8 +119,7 @@ public class RequestService {
         if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
         }
-        User volunteer = userRepository.findById(volunteerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with id: " + volunteerId));
+        User volunteer = userService.getUserById(volunteerId);
         existingRequest.setVolunteer(volunteer);
         existingRequest.setStatus(RequestStatus.ACCEPTING);
         requestRepository.save(existingRequest);

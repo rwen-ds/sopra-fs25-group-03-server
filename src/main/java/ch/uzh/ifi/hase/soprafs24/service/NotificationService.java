@@ -67,11 +67,11 @@ public class NotificationService {
     }
 
     public void posterCancelNotification(Request request) {
-        createAndSaveNotification(request.getVolunteer(), request.getPoster(), request, NotificationType.POSTERCALCEL);
+        createAndSaveNotification(request.getVolunteer(), request.getPoster(), request, NotificationType.POSTERCANCEL);
     }
 
     public void volunteerCancelNotification(Request request) {
-        createAndSaveNotification(request.getPoster(), request.getVolunteer(), request, NotificationType.VOLUNTEERCALCEL);
+        createAndSaveNotification(request.getPoster(), request.getVolunteer(), request, NotificationType.VOLUNTEERCANCEL);
     }
 
     public List<NotificationDTO> getNotificationDTOS(String token) {

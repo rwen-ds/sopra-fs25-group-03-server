@@ -1,49 +1,45 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.when;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import org.springframework.web.context.request.async.DeferredResult;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import ch.uzh.ifi.hase.soprafs24.entity.Message;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.MessageRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageDTO;
 import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
 import ch.uzh.ifi.hase.soprafs24.service.MessageService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MessageController.class)
 @AutoConfigureMockMvc(addFilters = false)  // Disable the filter
 public class MessageControllerTest {
+
+    private static final String AUTH_HEADER = "token";
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
     private MessageService messageService;
-
-    @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
-    private MessageRepository messageRepository;
 
     @MockBean
     private UserService userService;
@@ -64,16 +60,16 @@ public class MessageControllerTest {
 
         Message message1 = new Message();
         message1.setId(1L);
-        message1.setSender(sender);
-        message1.setRecipient(recipient);
+        message1.setSenderId(1L);
+        message1.setRecipientId(2L);
         message1.setContent("Hello, World!");
         message1.setTimestamp(LocalDateTime.now());
         message1.setRead(true);
 
         Message message2 = new Message();
         message2.setId(2L);
-        message2.setSender(recipient);
-        message2.setRecipient(sender);
+        message2.setSenderId(2L);
+        message2.setRecipientId(1L);
         message2.setContent("Hi there!");
         message2.setTimestamp(LocalDateTime.now());
         message2.setRead(false);
@@ -151,4 +147,90 @@ public class MessageControllerTest {
                         .content(new ObjectMapper().writeValueAsString(messageDTO)))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    public void testMarkMessageAsRead_success() throws Exception {
+        Long senderId = 1L;
+        Long recipientId = 2L;
+
+        doNothing().when(messageService).markMessageAsRead(senderId, recipientId);
+
+        mockMvc.perform(put("/messages/mark-read/{senderId}/{recipientId}", senderId, recipientId))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void testMarkMessageAsRead_serviceThrowsException() throws Exception {
+        Long senderId = 1L;
+        Long recipientId = 2L;
+
+        String errorMessage = "No messages found";
+        HttpStatus status = HttpStatus.NOT_FOUND;
+
+        doThrow(new ResponseStatusException(status, errorMessage))
+                .when(messageService).markMessageAsRead(senderId, recipientId);
+
+        mockMvc.perform(put("/messages/mark-read/{senderId}/{recipientId}", senderId, recipientId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(errorMessage));
+    }
+
+    @Test
+    public void testHasUnreadMessages_success() throws Exception {
+        String token = "token";
+        Map<String, Boolean> responseMap = new HashMap<>();
+        responseMap.put("hasUnread", true);
+
+        // Mock service method to return the expected result
+        when(messageService.hasUnreadMessage(token)).thenReturn(responseMap);
+
+        mockMvc.perform(get("/messages/unread").header(AUTH_HEADER, token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasUnread").value(true));  // Expecting "hasUnread": true
+    }
+
+    @Test
+    public void testHasUnreadMessages_serviceThrowsException() throws Exception {
+        String token = "invalid-token";
+        String errorMessage = "User not found";
+
+        // Mock service method to throw a ResponseStatusException
+        when(messageService.hasUnreadMessage(token))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage));
+
+        mockMvc.perform(get("/messages/unread")
+                        .header(AUTH_HEADER, token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(errorMessage));  // Expecting the error message in the response
+    }
+
+    @Test
+    public void testGetConversation_invalidSenderAndRecipient() throws Exception {
+        Long senderId = 1L;
+        Long recipientId = 1L;  // Same sender and recipient, should throw exception
+
+        // Mock service method to throw ResponseStatusException
+        when(messageService.getConversation(senderId, recipientId))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot get conversation with self"));
+
+        mockMvc.perform(get("/messages/conversation/{senderId}/{recipientId}", senderId, recipientId))
+                .andExpect(status().isBadRequest())  // Expect 400 Bad Request
+                .andExpect(jsonPath("$.message").value("Cannot get conversation with self"));  // Expect the error message in the response
+    }
+
+    @Test
+    public void testGetChatContacts_serviceThrowsException() throws Exception {
+        String token = "valid-token";
+        String errorMessage = "Invalid token";
+
+        when(messageService.getChatContacts(token))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage));
+
+        mockMvc.perform(get("/messages/contacts")
+                        .header(AUTH_HEADER, token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(errorMessage));
+    }
+
+
 }

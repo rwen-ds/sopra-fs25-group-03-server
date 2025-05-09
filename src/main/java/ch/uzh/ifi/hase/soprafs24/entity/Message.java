@@ -1,10 +1,11 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import javax.persistence.*;
 
 @Entity
 @Table(name = "MESSAGE")
@@ -16,13 +17,9 @@ public class Message implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
-    private User sender;
+    private Long senderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
-    private User recipient;
+    private Long recipientId;
 
     private String content;
     private LocalDateTime timestamp;
@@ -39,20 +36,20 @@ public class Message implements Serializable {
         this.id = id;
     }
 
-    public User getSender() {
-        return sender;
+    public Long getSenderId() {
+        return senderId;
     }
 
-    public void setSender(User sender) {
-        this.sender = sender;
+    public void setSenderId(Long senderId) {
+        this.senderId = senderId;
     }
 
-    public User getRecipient() {
-        return recipient;
+    public Long getRecipientId() {
+        return recipientId;
     }
 
-    public void setRecipient(User recipient) {
-        this.recipient = recipient;
+    public void setRecipientId(Long recipientId) {
+        this.recipientId = recipientId;
     }
 
     public String getContent() {

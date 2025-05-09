@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Internal User Representation
@@ -36,7 +37,7 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, name="creation_date")
+    @Column(nullable = false, name = "creation_date")
     private LocalDate creationDate;
 
     @Column()
@@ -62,6 +63,10 @@ public class User implements Serializable {
 
     @Column(nullable = false)
     private boolean isAdmin;
+
+    @OneToMany(mappedBy = "poster", cascade = CascadeType.REMOVE)
+    private List<Request> posterRequests;
+
 
     public Long getId() {
         return id;
@@ -165,5 +170,14 @@ public class User implements Serializable {
 
     public void setIsAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;
+    }
+    
+
+    public List<Request> getPosterRequests() {
+        return posterRequests;
+    }
+
+    public void setPosterRequests(List<Request> posterRequests) {
+        this.posterRequests = posterRequests;
     }
 }

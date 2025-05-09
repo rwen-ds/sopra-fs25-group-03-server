@@ -3,7 +3,6 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.TranslationResponseDTO;
 import ch.uzh.ifi.hase.soprafs24.service.TranslationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,8 +12,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class TranslateController {
-    @Autowired
-    private TranslationService translationService;
+    private final TranslationService translationService;
+
+    public TranslateController(TranslationService translationService) {
+        this.translationService = translationService;
+    }
 
     @GetMapping("/translate")
     public ResponseEntity<?> translate(@RequestParam String text, @RequestParam String target) {

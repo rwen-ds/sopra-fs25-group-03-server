@@ -55,15 +55,13 @@ public class MessageController {
                                                      @PathVariable Long recipientId) {
         try {
             List<Message> conversation = messageService.getConversation(senderId, recipientId);
-            List<MessageDTO> messageDTOs = conversation.stream().map(msg -> {
-                return new MessageDTO(
-                        msg.getSender().getId(),
-                        msg.getRecipient().getId(),
-                        msg.getContent(),
-                        msg.getTimestamp(),
-                        msg.isRead()
-                );
-            }).collect(Collectors.toList());
+            List<MessageDTO> messageDTOs = conversation.stream().map(msg -> new MessageDTO(
+                    msg.getSenderId(),
+                    msg.getRecipientId(),
+                    msg.getContent(),
+                    msg.getTimestamp(),
+                    msg.isRead()
+            )).collect(Collectors.toList());
             return ResponseEntity.ok(messageDTOs);
         }
         catch (ResponseStatusException ex) {

@@ -1,7 +1,10 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import org.slf4j.Logger;
@@ -32,11 +35,13 @@ public class UserService {
     private final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private RequestRepository requestRepository;
 
 
     @Autowired
-    public UserService(@Qualifier("userRepository") UserRepository userRepository) {
+    public UserService(@Qualifier("userRepository") UserRepository userRepository, RequestRepository requestRepository) {
         this.userRepository = userRepository;
+        this.requestRepository = requestRepository;
     }
 
     public List<User> getUsers() {
@@ -196,6 +201,13 @@ public class UserService {
         }
         if (!Objects.equals(userId, currentUser.getId()) && !currentUser.getUsername().equals("admin")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized user");
+        }
+
+        List<Request> requests = requestRepository.findByVolunteer(deleteUser);
+        for (Request request : requests) {
+            request.setVolunteer(null);
+            request.setStatus(RequestStatus.WAITING);
+            requestRepository.save(request);
         }
 
         userRepository.delete(deleteUser);

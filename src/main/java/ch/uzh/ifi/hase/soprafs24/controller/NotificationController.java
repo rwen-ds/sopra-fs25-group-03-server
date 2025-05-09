@@ -1,7 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
-import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
 import ch.uzh.ifi.hase.soprafs24.service.NotificationService;
@@ -18,7 +16,7 @@ public class NotificationController {
     private static final String AUTH_HEADER = "token";
     private final NotificationService notificationService;
 
-    public NotificationController(NotificationRepository notificationRepository, UserRepository userRepository, NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService) {
         this.notificationService = notificationService;
     }
 

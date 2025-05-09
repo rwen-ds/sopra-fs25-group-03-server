@@ -57,8 +57,7 @@ public class MessageService {
         if (senderId.equals(recipientId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot get conversation with self");
         }
-        List<Message> conversation = messageRepository.findConversation(senderId, recipientId);
-        return conversation;
+        return messageRepository.findConversation(senderId, recipientId);
     }
 
     public List<ContactDTO> getChatContacts(String token) {
@@ -82,23 +81,23 @@ public class MessageService {
     }
 
     public void chat(MessageDTO messageDTO) {
-        if (messageDTO.getSenderId().equals(messageDTO.getRecipientId())) {
+        Long senderId = messageDTO.getSenderId();
+        Long recipientId = messageDTO.getRecipientId();
+        if (senderId.equals(recipientId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender and recipient cannot be the same user");
         }
-        User sender = userRepository.findById(messageDTO.getSenderId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
-        User recipient = userRepository.findById(messageDTO.getRecipientId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipient not found"));
+
         Message message = new Message();
-        message.setSender(sender);
-        message.setRecipient(recipient);
+        message.setSenderId(senderId);
+        message.setRecipientId(recipientId);
         message.setContent(messageDTO.getContent());
         message.setTimestamp(LocalDateTime.now());
         message.setRead(messageDTO.isRead());
         messageRepository.save(message);
 
-        DeferredResult<String> waiting = waitingUsers.get(recipient.getId());
+        DeferredResult<String> waiting = waitingUsers.get(recipientId);
         if (waiting != null) {
-            waiting.setResult(sender.getId() + ":" + message.getContent());
+            waiting.setResult(senderId + ":" + message.getContent());
         }
     }
 

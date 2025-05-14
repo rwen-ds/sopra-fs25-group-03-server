@@ -62,11 +62,11 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "The email " + newUser.getEmail() + " already exists.");
         }
-        String checkEmail = newUser.getEmail();
-        if (!(checkEmail.contains("uzh") || checkEmail.contains("ethz") || checkEmail.contains("edu") || checkEmail.contains("stu"))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "The email " + checkEmail + " is not valid.");
-        }
+        // String checkEmail = newUser.getEmail();
+        // if (!(checkEmail.contains("uzh") || checkEmail.contains("ethz") || checkEmail.contains("edu") || checkEmail.contains("stu"))) {
+        //     throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+        //             "The email " + checkEmail + " is not valid.");
+        // }
         // initialize
         newUser.setToken(UUID.randomUUID().toString());
         newUser.setStatus(UserStatus.ONLINE);

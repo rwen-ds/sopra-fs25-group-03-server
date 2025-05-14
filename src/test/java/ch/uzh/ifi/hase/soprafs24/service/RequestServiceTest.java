@@ -1,25 +1,36 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
 
 @ExtendWith(MockitoExtension.class)
 public class RequestServiceTest {
@@ -299,5 +310,370 @@ public class RequestServiceTest {
         for (Request req : waitingRequests) {
             assertEquals(RequestStatus.WAITING, req.getStatus());
         }
+    }
+
+    @Test
+    public void testVolunteerRequest_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.WAITING, poster);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userService.getUserByToken("volunteerToken")).thenReturn(volunteer);
+        when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // 执行测试
+        requestService.volunteerRequest(1L, "volunteerToken");
+        
+        // 验证结果
+        assertEquals(RequestStatus.VOLUNTEERED, request.getStatus());
+        assertEquals(volunteer, request.getVolunteer());
+        verify(notificationService).volunteerNotification(request, volunteer);
+    }
+    
+    @Test
+    public void testVolunteerRequest_ownRequest_throwsBadRequest() {
+        // 设置请求和用户 - 用户尝试为自己的请求做志愿者
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.WAITING, poster);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userService.getUserByToken("posterToken")).thenReturn(poster);
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.volunteerRequest(1L, "posterToken");
+        });
+        assertTrue(exception.getMessage().contains("You cannot volunteer for your own request"));
+    }
+    
+    @Test
+    public void testVolunteerRequest_notWaiting_throwsBadRequest() {
+        // 设置请求和用户 - 请求已经有志愿者了
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer1 = createSampleUser(200L, "volunteer1", "volunteer1Token");
+        User volunteer2 = createSampleUser(300L, "volunteer2", "volunteer2Token");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer1);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userService.getUserByToken("volunteer2Token")).thenReturn(volunteer2);
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.volunteerRequest(1L, "volunteer2Token");
+        });
+        assertTrue(exception.getMessage().contains("You can only volunteer for requests that are still waiting"));
+    }
+    
+    @Test
+    public void testMarkRequestAsDone_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // 执行测试
+        requestService.markRequestAsDone(1L, "posterToken");
+        
+        // 验证结果
+        assertEquals(RequestStatus.DONE, request.getStatus());
+    }
+    
+    @Test
+    public void testMarkRequestAsDone_invalidToken_throwsUnauthorized() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.markRequestAsDone(1L, "wrongToken");
+        });
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+    
+    @Test
+    public void testMarkRequestAsDone_invalidStatus_throwsBadRequest() {
+        // 设置请求和用户 - 请求状态不是COMPLETED
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.ACCEPTING, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.markRequestAsDone(1L, "posterToken");
+        });
+        assertTrue(exception.getMessage().contains("Only completed requests can be mark as done"));
+    }
+    
+    @Test
+    public void testFeedback_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.DONE, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // 执行测试
+        requestService.feedback(1L, "posterToken", "Great help!", 5);
+        
+        // 验证结果
+        assertEquals("Great help!", request.getFeedback());
+        assertEquals(5, request.getRating());
+        verify(notificationService).feedbackNotification(request);
+    }
+    
+    @Test
+    public void testFeedback_invalidToken_throwsUnauthorized() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.DONE, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.feedback(1L, "wrongToken", "Great help!", 5);
+        });
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+    
+    @Test
+    public void testFeedback_invalidStatus_throwsBadRequest() {
+        // 设置请求和用户 - 请求状态不是DONE
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.feedback(1L, "posterToken", "Great help!", 5);
+        });
+        assertTrue(exception.getMessage().contains("Only requests be marked as done can be feedback"));
+    }
+    
+    @Test
+    public void testGetRequestByPoster_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, poster);
+        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster);
+        List<Request> posterRequests = Arrays.asList(request1, request2);
+        
+        // 设置模拟行为
+        when(userService.getUserByToken("posterToken")).thenReturn(poster);
+        when(requestRepository.findByPoster(poster)).thenReturn(posterRequests);
+        
+        // 执行测试
+        List<Request> result = requestService.getRequestByPoster("posterToken");
+        
+        // 验证结果
+        assertEquals(2, result.size());
+        assertEquals("Request 1", result.get(0).getTitle());
+        assertEquals("Request 2", result.get(1).getTitle());
+    }
+    
+    @Test
+    public void testGetFeedbackById_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        
+        // 创建两个有反馈的请求和一个没有反馈的请求
+        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.DONE, poster, volunteer);
+        request1.setFeedback("Excellent service");
+        request1.setRating(5);
+        
+        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.DONE, poster, volunteer);
+        request2.setFeedback("Good job");
+        request2.setRating(4);
+        
+        Request request3 = createSampleRequest(3L, "Request 3", RequestStatus.DONE, poster, volunteer);
+        // 没有设置反馈
+        
+        List<Request> volunteerRequests = Arrays.asList(request1, request2, request3);
+        
+        // 设置模拟行为
+        when(requestRepository.findByVolunteerId(200L)).thenReturn(volunteerRequests);
+        
+        // 执行测试
+        List<FeedbackDTO> feedbacks = requestService.getFeedbackById(200L);
+        
+        // 验证结果
+        assertEquals(2, feedbacks.size());
+        assertEquals("Excellent service", feedbacks.get(0).getFeedback());
+        assertEquals(5, feedbacks.get(0).getRating());
+        assertEquals("Good job", feedbacks.get(1).getFeedback());
+        assertEquals(4, feedbacks.get(1).getRating());
+    }
+    
+    @Test
+    public void testGetPostRequestsByUserId_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, poster);
+        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster);
+        List<Request> requests = Arrays.asList(request1, request2);
+        
+        // 设置模拟行为
+        when(requestRepository.findByPosterId(100L)).thenReturn(requests);
+        
+        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        List<RequestGetDTO> result = requestService.getPostRequestsByUserId(100L);
+        
+        // 验证结果 - 确认返回了正确数量的DTO对象
+        assertEquals(2, result.size());
+    }
+    
+    @Test
+    public void testGetVolunteerRequestsByUserId_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.VOLUNTEERED, poster, volunteer);
+        Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster, volunteer);
+        List<Request> requests = Arrays.asList(request1, request2);
+        
+        // 设置模拟行为
+        when(requestRepository.findByVolunteerId(200L)).thenReturn(requests);
+        
+        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        List<RequestGetDTO> result = requestService.getVolunteerRequestsByUserId(200L);
+        
+        // 验证结果 - 确认返回了正确数量的DTO对象
+        assertEquals(2, result.size());
+    }
+    
+    @Test
+    public void testCreateRequest_missingTitle_throwsBadRequest() {
+        // 创建缺少标题的请求
+        Request newRequest = new Request();
+        newRequest.setDescription("Test Description");
+        newRequest.setEmergencyLevel(RequestEmergencyLevel.LOW);
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.createRequest(newRequest, 1L);
+        });
+        assertTrue(exception.getMessage().contains("Title cannot be empty"));
+    }
+    
+    @Test
+    public void testCreateRequest_missingDescription_throwsBadRequest() {
+        // 创建缺少描述的请求
+        Request newRequest = new Request();
+        newRequest.setTitle("Test Title");
+        newRequest.setEmergencyLevel(RequestEmergencyLevel.LOW);
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.createRequest(newRequest, 1L);
+        });
+        assertTrue(exception.getMessage().contains("Description cannot be empty"));
+    }
+    
+    @Test
+    public void testCreateRequest_missingEmergencyLevel_throwsBadRequest() {
+        // 创建缺少紧急程度的请求
+        Request newRequest = new Request();
+        newRequest.setTitle("Test Title");
+        newRequest.setDescription("Test Description");
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.createRequest(newRequest, 1L);
+        });
+        assertTrue(exception.getMessage().contains("Emergency level must be set"));
+    }
+    
+    @Test
+    public void testGetRequests_notAdmin_throwsUnauthorized() {
+        // 设置非管理员用户
+        User user = createSampleUser(100L, "regularUser", "userToken");
+        when(userService.getUserByToken("userToken")).thenReturn(user);
+        
+        // 执行测试并验证异常
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.getRequests("userToken");
+        });
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+    
+    @Test
+    public void testCompleteRequest_invalidToken_throwsUnauthorized() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.ACCEPTING, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常 - 使用发布者的令牌而不是志愿者的令牌
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.completeRequest(1L, "posterToken");
+        });
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+    
+    @Test
+    public void testCancelRequest_volunteerCancels_success() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // 执行测试 - 志愿者取消
+        requestService.cancelRequest(1L, "volunteerToken");
+        
+        // 验证结果
+        assertEquals(RequestStatus.WAITING, request.getStatus());
+        assertNull(request.getVolunteer());
+        verify(notificationService).volunteerCancelNotification(request);
+    }
+    
+    @Test
+    public void testCancelRequest_invalidUser_throwsUnauthorized() {
+        // 设置请求和用户
+        User poster = createSampleUser(100L, "posterUser", "posterToken");
+        User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
+        User otherUser = createSampleUser(300L, "otherUser", "otherToken");
+        Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer);
+        
+        // 设置模拟行为
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        
+        // 执行测试并验证异常 - 使用其他用户的令牌
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.cancelRequest(1L, "otherToken");
+        });
+        assertTrue(exception.getMessage().contains("Invalid user"));
     }
 }

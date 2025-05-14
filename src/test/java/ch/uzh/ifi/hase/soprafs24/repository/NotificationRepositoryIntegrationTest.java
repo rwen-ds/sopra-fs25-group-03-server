@@ -1,19 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
@@ -21,6 +7,17 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 public class NotificationRepositoryIntegrationTest {
@@ -78,7 +75,7 @@ public class NotificationRepositoryIntegrationTest {
         notification1.setRequest(request);
         notification1.setType(NotificationType.VOLUNTEERED);
         notification1.setTimestamp(LocalDateTime.now());
-        notification1.setRead(false);
+        notification1.setIsRead(false);
         entityManager.persist(notification1);
 
         // 第二个通知 (已读)
@@ -89,7 +86,7 @@ public class NotificationRepositoryIntegrationTest {
         notification2.setRequest(request);
         notification2.setType(NotificationType.VOLUNTEERING);
         notification2.setTimestamp(LocalDateTime.now().minusHours(1));
-        notification2.setRead(true);
+        notification2.setIsRead(true);
         entityManager.persist(notification2);
 
         entityManager.flush();
@@ -110,7 +107,7 @@ public class NotificationRepositoryIntegrationTest {
 
         assertEquals(1, unreadNotifications.size());
         assertEquals(NotificationType.VOLUNTEERED, unreadNotifications.get(0).getType());
-        assertFalse(unreadNotifications.get(0).isRead());
+        assertFalse(unreadNotifications.get(0).getIsRead());
     }
 
     @Test
@@ -119,7 +116,7 @@ public class NotificationRepositoryIntegrationTest {
         assertTrue(hasUnread);
 
         // 将所有通知标记为已读
-        notification1.setRead(true);
+        notification1.setIsRead(true);
         entityManager.persist(notification1);
         entityManager.flush();
 
@@ -136,7 +133,7 @@ public class NotificationRepositoryIntegrationTest {
         newNotification.setRequest(request);
         newNotification.setType(NotificationType.ACCEPTED);
         newNotification.setTimestamp(LocalDateTime.now());
-        newNotification.setRead(false);
+        newNotification.setIsRead(false);
 
         Notification savedNotification = notificationRepository.save(newNotification);
 

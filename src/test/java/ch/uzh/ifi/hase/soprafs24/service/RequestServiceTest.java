@@ -4,6 +4,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,9 @@ public class RequestServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private NotificationRepository notificationRepository;
 
     private User createSampleUser(Long id, String username, String token) {
         User user = new User();
@@ -168,16 +172,16 @@ public class RequestServiceTest {
 
     @Test
     public void testDeleteRequest_success() {
-
         User poster = createSampleUser(100L, "posterUser", "token");
         Request existingRequest = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
+
         when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
         when(userService.getUserByToken("token")).thenReturn(poster);
-        doNothing().when(requestRepository).delete(existingRequest);
 
-        assertDoesNotThrow(() -> requestService.deleteRequest(1L, "token"));
+        assertDoesNotThrow(() -> requestService.deleteRequest(1L, "token", "Some reason"));
 
-        verify(requestRepository, times(1)).delete(existingRequest);
+        verify(requestRepository, times(1)).save(existingRequest);
+        verify(notificationRepository, times(1)).deleteByRequest(existingRequest);
     }
 
     @Test
@@ -190,7 +194,7 @@ public class RequestServiceTest {
         when(userService.getUserByToken("wrongToken")).thenReturn(fakeUser);
 
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            requestService.deleteRequest(1L, "wrongToken");
+            requestService.deleteRequest(1L, "wrongToken", "");
         });
         assertTrue(exception.getMessage().contains("Invalid token"));
     }

@@ -6,6 +6,8 @@ import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.DeleteRequestDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
 import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
@@ -201,23 +203,32 @@ public class RequestControllerTest {
 
     @Test
     void deleteRequest_success() throws Exception {
-        doNothing().when(requestService).deleteRequest(eq(1L), eq("validToken"));
+        DeleteRequestDTO deleteDTO = new DeleteRequestDTO();
+        deleteDTO.setReason("Some valid reason");
 
-        mockMvc.perform(delete("/requests/1")
-                        .header(AUTH_HEADER, "validToken"))
-                .andExpect(status().isOk());
+        doNothing().when(requestService).deleteRequest(eq(1L), eq("validToken"), eq("Some valid reason"));
+
+        mockMvc.perform(put("/requests/1/delete")
+                        .header(AUTH_HEADER, "validToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\": \"Some valid reason\"}"))
+                .andExpect(status().isOk());  // Expecting HTTP 200 OK status
     }
 
     @Test
     public void testDeleteRequest_Unauthorized() throws Exception {
+        String token = "validToken";
+        String reason = "Some valid reason";
         Long requestId = 1L;
-        String token = "invalid-token";
 
         doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
-                .when(requestService).deleteRequest(eq(requestId), eq(token));
+                .when(requestService).deleteRequest(eq(requestId), eq(token), eq(reason));
 
-        mockMvc.perform(delete("/requests/{requestId}", requestId)
-                        .header(AUTH_HEADER, token))
+        // Act & Assert
+        mockMvc.perform(put("/requests/{requestId}/delete", requestId)
+                        .header(AUTH_HEADER, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\": \"" + reason + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid token"));
     }
@@ -437,6 +448,7 @@ public class RequestControllerTest {
         Long requestId = 1L;
         String validToken = "validToken";
         String feedbackMessage = "This is feedback message";
+        int rating = 5;
 
         Request req = new Request();
         req.setId(requestId);
@@ -446,7 +458,7 @@ public class RequestControllerTest {
 
         when(requestService.getRequestById(requestId)).thenReturn(req);
 
-        doNothing().when(requestService).feedback(eq(requestId), eq(validToken), eq(feedbackMessage));
+        doNothing().when(requestService).feedback(eq(requestId), eq(validToken), eq(feedbackMessage), eq(rating));
 
         mockMvc.perform(put("/requests/{requestId}/feedback", requestId)
                         .header(AUTH_HEADER, validToken)
@@ -460,6 +472,7 @@ public class RequestControllerTest {
         Long requestId = 1L;
         String validToken = "validToken";
         String feedbackMessage = "This is feedback message";
+        int rating = 5;
 
         Request req = new Request();
         req.setId(requestId);
@@ -469,13 +482,13 @@ public class RequestControllerTest {
 
         when(requestService.getRequestById(requestId)).thenReturn(req);
         doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests be marked as done can be feedback"))
-                .when(requestService).feedback(eq(requestId), eq(validToken), eq(feedbackMessage));
+                .when(requestService).feedback(eq(requestId), eq(validToken), eq(feedbackMessage), eq(rating));
 
 
         mockMvc.perform(put("/requests/{requestId}/feedback", requestId)
                         .header(AUTH_HEADER, validToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"feedback\": \"" + feedbackMessage + "\"}"))
+                        .content(String.format("{\"feedback\": \"%s\", \"rating\": %d}", feedbackMessage, rating)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Only requests be marked as done can be feedback"));
     }
@@ -483,21 +496,18 @@ public class RequestControllerTest {
     @Test
     public void testGetFeedbacksByVolunteer_success() throws Exception {
         Long volunteerId = 1L;
-        String feedback1 = "Great job!";
-        String feedback2 = "Needs improvement";
+        FeedbackDTO feedbackDTO1 = new FeedbackDTO("Great job!", 5);
+        FeedbackDTO feedbackDTO2 = new FeedbackDTO("Needs improvement", 2);
 
-        Request req1 = new Request();
-        req1.setFeedback(feedback1);
 
-        Request req2 = new Request();
-        req2.setFeedback(feedback2);
-
-        when(requestService.getFeedbackById(volunteerId)).thenReturn(Arrays.asList(feedback1, feedback2));
+        when(requestService.getFeedbackById(volunteerId)).thenReturn(Arrays.asList(feedbackDTO1, feedbackDTO2));
 
         mockMvc.perform(get("/requests/{volunteerId}/feedbacks", volunteerId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").value(feedback1))
-                .andExpect(jsonPath("$[1]").value(feedback2));
+                .andExpect(jsonPath("$[0].feedback").value(feedbackDTO1.getFeedback()))
+                .andExpect(jsonPath("$[0].rating").value(feedbackDTO1.getRating()))
+                .andExpect(jsonPath("$[1].feedback").value(feedbackDTO2.getFeedback()))
+                .andExpect(jsonPath("$[1].rating").value(feedbackDTO2.getRating()));
     }
 
     @Test

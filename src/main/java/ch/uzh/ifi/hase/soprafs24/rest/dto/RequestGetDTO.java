@@ -1,24 +1,30 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
-import java.time.LocalDate;
-
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 
 public class RequestGetDTO {
-    
+
     private Long id;
     private String title;
     private String description;
     private String contactInfo;
     private String feedback;
+    private int rating;
     private RequestStatus status;
     private RequestEmergencyLevel emergencyLevel;
     private String location;
     private LocalDate creationDate;
     private Long posterId;
     private Long volunteerId;
+    private LocalDateTime publishedAt;
+    private LocalDateTime updatedAt;
+    private String posterUsername;
+    private String volunteerUsername;
 
     public Long getId() {
         return id;
@@ -106,5 +112,45 @@ public class RequestGetDTO {
 
     public void setEmergencyLevel(RequestEmergencyLevel emergencyLevel) {
         this.emergencyLevel = emergencyLevel;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
+
+    public LocalDateTime getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(LocalDateTime publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getPosterUsername() {
+        return posterUsername;
+    }
+
+    public void setPosterUsername(String posterUsername) {
+        this.posterUsername = posterUsername;
+    }
+
+    public String getVolunteerUsername() {
+        return volunteerUsername;
+    }
+
+    public void setVolunteerUsername(String volunteerUsername) {
+        this.volunteerUsername = volunteerUsername;
     }
 }

@@ -5,5 +5,6 @@ public enum RequestStatus {
     VOLUNTEERED, // Volunteer clicked volunteer
     ACCEPTING, // Poster clicked accept
     COMPLETED, // Volunteer clicked completed
-    DONE //Poster clicked done
+    DONE,//Poster clicked done
+    DELETED
 }

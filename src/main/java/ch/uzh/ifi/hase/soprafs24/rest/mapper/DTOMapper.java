@@ -52,14 +52,20 @@ public interface DTOMapper {
     @Mapping(source = "description", target = "description")
     @Mapping(source = "contactInfo", target = "contactInfo")
     @Mapping(source = "feedback", target = "feedback")
+    @Mapping(source = "rating", target = "rating")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "emergencyLevel", target = "emergencyLevel")
     @Mapping(source = "location", target = "location")
     @Mapping(source = "creationDate", target = "creationDate")
     @Mapping(source = "poster.id", target = "posterId")
     @Mapping(source = "volunteer.id", target = "volunteerId")
+    @Mapping(source = "publishedAt", target = "publishedAt")
+    @Mapping(source = "updatedAt", target = "updatedAt")
+    @Mapping(source = "poster.username", target = "posterUsername")
+    @Mapping(source = "volunteer.username", target = "volunteerUsername")
     RequestGetDTO convertEntityToRequestGetDTO(Request request);
 
+    @Mapping(source = "id", target = "notificationId")
     @Mapping(source = "recipientId", target = "recipientId")
     @Mapping(source = "relatedUserId", target = "relatedUserId")
     @Mapping(source = "relatedUsername", target = "relatedUsername")
@@ -67,6 +73,6 @@ public interface DTOMapper {
     @Mapping(source = "request.title", target = "requestTitle")
     @Mapping(source = "type", target = "type")
     @Mapping(source = "timestamp", target = "timestamp")
-    @Mapping(source = "read", target = "read")
+    @Mapping(source = "isRead", target = "isRead")
     NotificationDTO convertEntityToNotificationDTO(Notification notification);
 }

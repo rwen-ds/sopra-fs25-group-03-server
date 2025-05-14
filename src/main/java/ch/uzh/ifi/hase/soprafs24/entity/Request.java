@@ -1,13 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
-import java.io.Serializable;
-import java.time.LocalDate;
-import java.util.List;
-
-import javax.persistence.*;
-
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import javax.persistence.*;
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "REQUEST")
@@ -22,6 +24,10 @@ public class Request implements Serializable {
 
     @Column(nullable = false)
     private String title;
+
+    @ManyToOne
+    @JoinColumn(name = "posterId", nullable = false)
+    private User poster;
 
     @Column(nullable = false)
     private String description;
@@ -39,6 +45,14 @@ public class Request implements Serializable {
     @Column
     private String feedback;
 
+    private int rating;
+
+    @CreationTimestamp
+    private LocalDateTime publishedAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
     @Column(nullable = false)
     private RequestStatus status;
 
@@ -47,13 +61,16 @@ public class Request implements Serializable {
 
     @Column(nullable = false, name = "creation_date")
     private LocalDate creationDate;
-    
-    @ManyToOne
-    @JoinColumn(name = "posterId", nullable = false)
-    private User poster;
 
     @OneToMany(mappedBy = "request", cascade = CascadeType.REMOVE)
     private List<Notification> notifications;
+
+    private LocalDate deletedAt;
+
+    private Long deletedByUserId;
+
+    private String deleteReason;
+
 
     public Long getId() {
         return id;
@@ -149,5 +166,53 @@ public class Request implements Serializable {
 
     public void setNotifications(List<Notification> notifications) {
         this.notifications = notifications;
+    }
+
+    public LocalDate getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDate deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public Long getDeletedByUserId() {
+        return deletedByUserId;
+    }
+
+    public void setDeletedByUserId(Long deletedByUserId) {
+        this.deletedByUserId = deletedByUserId;
+    }
+
+    public String getDeleteReason() {
+        return deleteReason;
+    }
+
+    public void setDeleteReason(String deleteReason) {
+        this.deleteReason = deleteReason;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
+
+    public LocalDateTime getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(LocalDateTime publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

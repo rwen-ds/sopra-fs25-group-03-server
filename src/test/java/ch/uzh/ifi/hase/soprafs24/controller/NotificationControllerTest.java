@@ -1,5 +1,21 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
+import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
+import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
+import ch.uzh.ifi.hase.soprafs24.service.NotificationService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -8,30 +24,14 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import org.springframework.web.server.ResponseStatusException;
-
-import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
-import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
-import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
-import ch.uzh.ifi.hase.soprafs24.service.NotificationService;
 
 @WebMvcTest(NotificationController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -45,10 +45,10 @@ public class NotificationControllerTest {
 
     @MockBean
     private NotificationRepository notificationRepository;
-    
+
     @MockBean
     private UserRepository userRepository;
-    
+
     @MockBean
     private AuthFilter authFilter;
 
@@ -63,7 +63,7 @@ public class NotificationControllerTest {
         notification1.setRequestTitle("Help needed");
         notification1.setType(NotificationType.VOLUNTEERED);
         notification1.setTimestamp(LocalDateTime.now());
-        notification1.setRead(false);
+        notification1.setIsRead(false);
 
         NotificationDTO notification2 = new NotificationDTO();
         notification2.setRecipientId(1L);
@@ -73,7 +73,7 @@ public class NotificationControllerTest {
         notification2.setRequestTitle("Another help");
         notification2.setType(NotificationType.ACCEPTED);
         notification2.setTimestamp(LocalDateTime.now().minusHours(1));
-        notification2.setRead(true);
+        notification2.setIsRead(true);
 
         List<NotificationDTO> notifications = Arrays.asList(notification1, notification2);
 
@@ -95,7 +95,7 @@ public class NotificationControllerTest {
                 .andExpect(jsonPath("$[0].requestId", is(notification1.getRequestId().intValue())))
                 .andExpect(jsonPath("$[0].requestTitle", is(notification1.getRequestTitle())))
                 .andExpect(jsonPath("$[0].type", is(notification1.getType().toString())))
-                .andExpect(jsonPath("$[0].read", is(notification1.isRead())))
+                .andExpect(jsonPath("$[0].isRead", is(notification1.getIsRead())))
                 .andExpect(jsonPath("$[1].recipientId", is(notification2.getRecipientId().intValue())))
                 .andExpect(jsonPath("$[1].type", is(notification2.getType().toString())));
     }
@@ -156,7 +156,7 @@ public class NotificationControllerTest {
         response.put("hasUnread", true);
 
         // 模拟服务响应
-        given(notificationService.getResponse(anyString())).willReturn(response);
+        given(notificationService.getUnreadNotifications(anyString())).willReturn(response);
 
         // 构建请求
         MockHttpServletRequestBuilder getRequest = get("/notifications/unread")
@@ -172,7 +172,7 @@ public class NotificationControllerTest {
     @Test
     public void getUnreadNotifications_error() throws Exception {
         // 模拟服务抛出异常
-        given(notificationService.getResponse(anyString()))
+        given(notificationService.getUnreadNotifications(anyString()))
                 .willThrow(new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid token"));
 
         // 构建请求

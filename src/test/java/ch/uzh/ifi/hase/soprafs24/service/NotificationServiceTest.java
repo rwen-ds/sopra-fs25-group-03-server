@@ -77,7 +77,7 @@ public class NotificationServiceTest {
         notification.setRequest(request);
         notification.setType(NotificationType.VOLUNTEERED);
         notification.setTimestamp(LocalDateTime.now());
-        notification.setRead(false);
+        notification.setIsRead(false);
     }
 
     @Test
@@ -146,7 +146,7 @@ public class NotificationServiceTest {
 
         // 验证所有通知都被标记为已读
         verify(notificationRepository).saveAll(ArgumentMatchers.argThat(list ->
-                ((List<Notification>) list).stream().allMatch(Notification::isRead)
+                ((List<Notification>) list).stream().allMatch(Notification::getIsRead)
         ));
     }
 
@@ -200,7 +200,7 @@ public class NotificationServiceTest {
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(true);
 
-        Map<String, Boolean> response = notificationService.getResponse(token);
+        Map<String, Boolean> response = notificationService.getUnreadNotifications(token);
 
         assertTrue(response.containsKey("hasUnread"));
         assertTrue(response.get("hasUnread"));
@@ -208,7 +208,7 @@ public class NotificationServiceTest {
         // 测试无未读通知的情况
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(false);
 
-        response = notificationService.getResponse(token);
+        response = notificationService.getUnreadNotifications(token);
 
         assertTrue(response.containsKey("hasUnread"));
         assertFalse(response.get("hasUnread"));

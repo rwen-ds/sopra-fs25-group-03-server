@@ -2,11 +2,11 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
-import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 
 import java.time.LocalDateTime;
 
 public class NotificationDTO {
+    private Long notificationId;
     private Long recipientId;
     private Long relatedUserId;
     private String relatedUsername;
@@ -17,6 +17,14 @@ public class NotificationDTO {
     private LocalDateTime timestamp;
 
     public NotificationDTO() {
+    }
+
+    public Long getNotificationId() {
+        return notificationId;
+    }
+
+    public void setNotificationId(Long notificationId) {
+        this.notificationId = notificationId;
     }
 
     public Long getRecipientId() {
@@ -43,12 +51,12 @@ public class NotificationDTO {
         this.type = type;
     }
 
-    public boolean isRead() {
+    public boolean getIsRead() {
         return isRead;
     }
 
-    public void setRead(boolean read) {
-        isRead = read;
+    public void setIsRead(boolean isRead) {
+        this.isRead = isRead;
     }
 
     public LocalDateTime getTimestamp() {

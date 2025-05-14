@@ -1,10 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
 import org.springframework.http.HttpStatus;
@@ -80,10 +77,13 @@ public class RequestController {
         }
     }
 
-    @DeleteMapping("/{requestId}")
-    public ResponseEntity<?> deleteRequest(@PathVariable Long requestId, @RequestHeader(AUTH_HEADER) String token) {
+    @PutMapping("/{requestId}/delete")
+    public ResponseEntity<?> deleteRequest(@PathVariable Long requestId,
+                                           @RequestHeader(AUTH_HEADER) String token,
+                                           @RequestBody(required = false) DeleteRequestDTO deleteDTO) {
         try {
-            requestService.deleteRequest(requestId, token);
+            String reason = deleteDTO != null ? deleteDTO.getReason() : null;
+            requestService.deleteRequest(requestId, token, reason);
             return ResponseEntity.ok().build();
         }
         catch (ResponseStatusException ex) {
@@ -177,7 +177,7 @@ public class RequestController {
     @PutMapping("/{requestId}/feedback")
     public ResponseEntity<?> sendFeedback(@PathVariable Long requestId, @RequestHeader(AUTH_HEADER) String token, @RequestBody FeedbackDTO feedback) {
         try {
-            requestService.feedback(requestId, token, feedback.getFeedback());
+            requestService.feedback(requestId, token, feedback.getFeedback(), feedback.getRating());
             return ResponseEntity.ok().build();
         }
         catch (ResponseStatusException ex) {
@@ -188,8 +188,30 @@ public class RequestController {
     @GetMapping("/{volunteerId}/feedbacks")
     public ResponseEntity<?> getFeedbacksByVolunteer(@PathVariable Long volunteerId) {
         try {
-            List<String> feedbacks = requestService.getFeedbackById(volunteerId);
+            List<FeedbackDTO> feedbacks = requestService.getFeedbackById(volunteerId);
             return ResponseEntity.ok(feedbacks);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
+    }
+
+    @GetMapping("/{userId}/post-requests")
+    public ResponseEntity<?> getUserPostRequests(@PathVariable Long userId) {
+        try {
+            List<RequestGetDTO> requests = requestService.getPostRequestsByUserId(userId);
+            return ResponseEntity.ok(requests);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
+    }
+
+    @GetMapping("/{userId}/volunteer-requests")
+    public ResponseEntity<?> getVolunteerRequestsByUserId(@PathVariable Long userId) {
+        try {
+            List<RequestGetDTO> requests = requestService.getVolunteerRequestsByUserId(userId);
+            return ResponseEntity.ok(requests);
         }
         catch (ResponseStatusException ex) {
             return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));

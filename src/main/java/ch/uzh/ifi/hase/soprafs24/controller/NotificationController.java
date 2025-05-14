@@ -44,10 +44,21 @@ public class NotificationController {
 
     }
 
+    @PutMapping("/{notificationId}/mark-read")
+    public ResponseEntity<?> markNotificationAsRead(@PathVariable Long notificationId) {
+        try {
+            notificationService.markNotificationAsRead(notificationId);
+            return ResponseEntity.ok("Notification marked as read");
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getReason()));
+        }
+    }
+
     @GetMapping("/unread")
     public ResponseEntity<?> getUnreadNotifications(@RequestHeader(AUTH_HEADER) String token) {
         try {
-            Map<String, Boolean> response = notificationService.getResponse(token);
+            Map<String, Boolean> response = notificationService.getUnreadNotifications(token);
             return ResponseEntity.ok(response);
         }
 

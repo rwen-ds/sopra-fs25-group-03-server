@@ -3,7 +3,11 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,13 +29,15 @@ public class RequestService {
     private final RequestRepository requestRepository;
     private final NotificationService notificationService;
     private final UserService userService;
+    private final NotificationRepository notificationRepository;
 
 
     @Autowired
-    public RequestService(RequestRepository requestRepository, NotificationService notificationService, UserService userService) {
+    public RequestService(RequestRepository requestRepository, NotificationService notificationService, UserService userService, NotificationRepository notificationRepository) {
         this.requestRepository = requestRepository;
         this.notificationService = notificationService;
         this.userService = userService;
+        this.notificationRepository = notificationRepository;
     }
 
     public List<Request> getRequests(String token) {
@@ -105,13 +110,19 @@ public class RequestService {
         return existingRequest;
     }
 
-    public void deleteRequest(Long id, String token) {
+    public void deleteRequest(Long id, String token, String reason) {
         User user = userService.getUserByToken(token);
         Request existingRequest = getRequestById(id);
-        if (!user.getUsername().equals("admin") && !existingRequest.getPoster().getToken().equals(token)) {
+        if (!user.getUsername().equals("admin") && !user.getId().equals(existingRequest.getPoster().getId())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
-        requestRepository.delete(existingRequest);
+        existingRequest.setStatus(RequestStatus.DELETED);
+        existingRequest.setDeletedAt(LocalDate.now());
+        existingRequest.setDeletedByUserId(user.getId());
+        existingRequest.setDeleteReason(reason);
+
+        requestRepository.save(existingRequest);
+        notificationRepository.deleteByRequest(existingRequest);
     }
 
     public void acceptRequest(Long requestId, Long volunteerId) {
@@ -205,7 +216,7 @@ public class RequestService {
         requestRepository.save(existingRequest);
     }
 
-    public void feedback(Long requestId, String token, String feedback) {
+    public void feedback(Long requestId, String token, String feedback, int rating) {
         Request existingRequest = getRequestById(requestId);
         if (!existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
@@ -214,6 +225,7 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests be marked as done can be feedback");
         }
         existingRequest.setFeedback(feedback);
+        existingRequest.setRating(rating);
         requestRepository.save(existingRequest);
 
         notificationService.feedbackNotification(existingRequest);
@@ -224,14 +236,25 @@ public class RequestService {
         return requestRepository.findByPoster(user);
     }
 
-    public List<String> getFeedbackById(Long volunteerId) {
+    public List<FeedbackDTO> getFeedbackById(Long volunteerId) {
         List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
-        List<String> feedbacks = requests.stream()
-                .map(Request::getFeedback)
-                .filter(Objects::nonNull)
+        return requests.stream()
+                .filter(request -> request.getFeedback() != null)
+                .map(request -> new FeedbackDTO(request.getFeedback(), request.getRating()))
                 .collect(Collectors.toList());
-        return feedbacks;
     }
 
+    public List<RequestGetDTO> getPostRequestsByUserId(Long userId) {
+        List<Request> requests = requestRepository.findByPosterId(userId);
+        return requests.stream()
+                .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
+                .collect(Collectors.toList());
+    }
 
+    public List<RequestGetDTO> getVolunteerRequestsByUserId(Long volunteerId) {
+        List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
+        return requests.stream()
+                .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
+                .collect(Collectors.toList());
+    }
 }

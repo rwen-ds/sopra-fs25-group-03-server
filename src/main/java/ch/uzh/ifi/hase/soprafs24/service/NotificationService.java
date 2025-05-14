@@ -8,12 +8,15 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +37,7 @@ public class NotificationService {
         notification.setRequest(request);
         notification.setTimestamp(LocalDateTime.now());
         notification.setType(type);
-        notification.setRead(false);
+        notification.setIsRead(false);
         notificationRepository.save(notification);
     }
 
@@ -57,9 +60,22 @@ public class NotificationService {
         User user = userService.getUserByToken(token);
         List<Notification> notifications = notificationRepository.findByRecipientIdAndIsReadFalse(user.getId());
         for (Notification notification : notifications) {
-            notification.setRead(true);
+            notification.setIsRead(true);
         }
         notificationRepository.saveAll(notifications);
+    }
+
+    public void markNotificationAsRead(Long notificationId) {
+        Optional<Notification> notificationOptional = notificationRepository.findById(notificationId);
+
+        if (notificationOptional.isPresent()) {
+            Notification notification = notificationOptional.get();
+            notification.setIsRead(true);
+            notificationRepository.save(notification);
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notification not found");
+        }
     }
 
     public void feedbackNotification(Request request) {
@@ -84,7 +100,7 @@ public class NotificationService {
         return notificationDTOs;
     }
 
-    public Map<String, Boolean> getResponse(String token) {
+    public Map<String, Boolean> getUnreadNotifications(String token) {
         User user = userService.getUserByToken(token);
         boolean hasUnread = notificationRepository.existsByRecipientIdAndIsReadFalse(user.getId());
         Map<String, Boolean> response = new HashMap<>();

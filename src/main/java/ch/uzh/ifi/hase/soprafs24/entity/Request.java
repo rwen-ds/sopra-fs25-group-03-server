@@ -71,6 +71,9 @@ public class Request implements Serializable {
 
     private String deleteReason;
 
+    private Double latitude;
+    private Double longitude;
+    private String countryCode;
 
     public Long getId() {
         return id;
@@ -214,5 +217,29 @@ public class Request implements Serializable {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
     }
 }

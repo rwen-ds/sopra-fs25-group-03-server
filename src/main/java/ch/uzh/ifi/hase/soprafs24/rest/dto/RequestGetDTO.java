@@ -25,6 +25,9 @@ public class RequestGetDTO {
     private LocalDateTime updatedAt;
     private String posterUsername;
     private String volunteerUsername;
+    private Double latitude;
+    private Double longitude;
+    private String countryCode;
 
     public Long getId() {
         return id;
@@ -152,5 +155,29 @@ public class RequestGetDTO {
 
     public void setVolunteerUsername(String volunteerUsername) {
         this.volunteerUsername = volunteerUsername;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
     }
 }

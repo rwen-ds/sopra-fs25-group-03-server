@@ -45,6 +45,9 @@ public interface DTOMapper {
     @Mapping(source = "contactInfo", target = "contactInfo")
     @Mapping(source = "location", target = "location")
     @Mapping(source = "emergencyLevel", target = "emergencyLevel")
+    @Mapping(source = "latitude", target = "latitude")
+    @Mapping(source = "longitude", target = "longitude")
+    @Mapping(source = "countryCode", target = "countryCode")
     Request convertRequestPostDTOtoEntity(RequestPostDTO requestPostDTO);
 
     @Mapping(source = "id", target = "id")
@@ -63,6 +66,9 @@ public interface DTOMapper {
     @Mapping(source = "updatedAt", target = "updatedAt")
     @Mapping(source = "poster.username", target = "posterUsername")
     @Mapping(source = "volunteer.username", target = "volunteerUsername")
+    @Mapping(source = "latitude", target = "latitude")
+    @Mapping(source = "longitude", target = "longitude")
+    @Mapping(source = "countryCode", target = "countryCode")
     RequestGetDTO convertEntityToRequestGetDTO(Request request);
 
     @Mapping(source = "id", target = "notificationId")

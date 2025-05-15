@@ -105,6 +105,15 @@ public class RequestService {
         if (updatedRequest.getEmergencyLevel() != null) {
             existingRequest.setEmergencyLevel(updatedRequest.getEmergencyLevel());
         }
+        if (updatedRequest.getLatitude() != null) {
+            existingRequest.setLatitude(updatedRequest.getLatitude());
+        }
+        if (updatedRequest.getLongitude() != null) {
+            existingRequest.setLongitude(updatedRequest.getLongitude());
+        }
+        if (updatedRequest.getCountryCode() != null) {
+            existingRequest.setCountryCode(updatedRequest.getCountryCode());
+        }
 
         requestRepository.save(existingRequest);
         return existingRequest;

@@ -125,6 +125,9 @@ public class RequestService {
         if (!user.getUsername().equals("admin") && !user.getId().equals(existingRequest.getPoster().getId())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
+        if (existingRequest.getStatus().equals(RequestStatus.DELETED)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The request has been deleted");
+        }
         existingRequest.setStatus(RequestStatus.DELETED);
         existingRequest.setDeletedAt(LocalDate.now());
         existingRequest.setDeletedByUserId(user.getId());
@@ -249,7 +252,7 @@ public class RequestService {
         List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
         return requests.stream()
                 .filter(request -> request.getFeedback() != null)
-                .map(request -> new FeedbackDTO(request.getFeedback(), request.getRating()))
+                .map(request -> new FeedbackDTO(request.getId(), request.getFeedback(), request.getRating()))
                 .collect(Collectors.toList());
     }
 

@@ -496,8 +496,8 @@ public class RequestControllerTest {
     @Test
     public void testGetFeedbacksByVolunteer_success() throws Exception {
         Long volunteerId = 1L;
-        FeedbackDTO feedbackDTO1 = new FeedbackDTO("Great job!", 5);
-        FeedbackDTO feedbackDTO2 = new FeedbackDTO("Needs improvement", 2);
+        FeedbackDTO feedbackDTO1 = new FeedbackDTO(1L, "Great job!", 5);
+        FeedbackDTO feedbackDTO2 = new FeedbackDTO(1L, "Needs improvement", 2);
 
 
         when(requestService.getFeedbackById(volunteerId)).thenReturn(Arrays.asList(feedbackDTO1, feedbackDTO2));

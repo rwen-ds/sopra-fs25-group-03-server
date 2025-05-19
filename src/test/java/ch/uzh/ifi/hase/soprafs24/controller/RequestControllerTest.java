@@ -8,6 +8,7 @@ import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.DeleteRequestDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
 import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
@@ -25,8 +26,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -231,6 +234,19 @@ public class RequestControllerTest {
                         .content("{\"reason\": \"" + reason + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid token"));
+    }
+
+    @Test
+    void deleteRequest_withNullDeleteDTO() throws Exception {
+        DeleteRequestDTO deleteDTO = null;
+
+        doNothing().when(requestService).deleteRequest(eq(1L), eq("validToken"), eq(null));
+
+        mockMvc.perform(put("/requests/1/delete")
+                        .header(AUTH_HEADER, "validToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
     }
 
 
@@ -520,6 +536,62 @@ public class RequestControllerTest {
         mockMvc.perform(get("/requests/{volunteerId}/feedbacks", volunteerId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("The user with id: " + volunteerId + " was not found"));
+    }
+
+    @Test
+    void getUserPostRequests_success() throws Exception {
+        Long userId = 1L;
+        List<RequestGetDTO> requestList = new ArrayList<>();
+        RequestGetDTO request = new RequestGetDTO();
+        request.setId(1L);
+        request.setTitle("Test Request");
+        requestList.add(request);
+
+        when(requestService.getPostRequestsByUserId(userId)).thenReturn(requestList);
+
+        mockMvc.perform(get("/requests/{userId}/post-requests", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Test Request"));
+    }
+
+    @Test
+    void getUserPostRequests_failure() throws Exception {
+        Long userId = 1L;
+
+        when(requestService.getPostRequestsByUserId(userId)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        mockMvc.perform(get("/requests/{userId}/post-requests", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found"));
+    }
+
+    @Test
+    void getVolunteerRequestsByUserId_success() throws Exception {
+        Long userId = 1L;
+        List<RequestGetDTO> requestList = new ArrayList<>();
+        RequestGetDTO request = new RequestGetDTO();
+        request.setId(1L);
+        request.setTitle("Volunteer Request");
+        requestList.add(request);
+
+        when(requestService.getVolunteerRequestsByUserId(userId)).thenReturn(requestList);
+
+        mockMvc.perform(get("/requests/{userId}/volunteer-requests", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Volunteer Request"));
+    }
+
+    @Test
+    void getVolunteerRequestsByUserId_failure() throws Exception {
+        Long userId = 1L;
+
+        when(requestService.getVolunteerRequestsByUserId(userId)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        mockMvc.perform(get("/requests/{userId}/volunteer-requests", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found"));
     }
 
 

@@ -11,9 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -185,4 +188,27 @@ public class NotificationControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message", is("Invalid token")));
     }
-} 
+
+    @Test
+    public void testMarkNotificationAsRead_Success() throws Exception {
+        Long notificationId = 1L;
+        doNothing().when(notificationService).markNotificationAsRead(notificationId);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/notifications/{notificationId}/mark-read", notificationId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string("Notification marked as read"));
+    }
+
+    @Test
+    public void testMarkNotificationAsRead_Failure() throws Exception {
+        Long notificationId = 1L;
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"))
+                .when(notificationService).markNotificationAsRead(notificationId);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/notifications/{notificationId}/mark-read", notificationId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isNotFound())  // 期望返回404 Not Found
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Notification not found"));
+    }
+}

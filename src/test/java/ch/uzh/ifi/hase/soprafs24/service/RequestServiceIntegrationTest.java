@@ -131,7 +131,7 @@ public class RequestServiceIntegrationTest {
     public void acceptRequest_validScenario_success() {
         User poster = createUser("poster", "token");
         User volunteer = createUser("volunteer", "volunteerToken");
-        Request request = createRequest("Need Help", RequestStatus.VOLUNTEERED, poster);
+        Request request = createRequest("Need Help", RequestStatus.VOLUNTEERED, poster, volunteer);
 
         requestService.acceptRequest(request.getId(), volunteer.getId());
 

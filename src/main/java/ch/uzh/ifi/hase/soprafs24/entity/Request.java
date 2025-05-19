@@ -45,7 +45,7 @@ public class Request implements Serializable {
     @Column
     private String feedback;
 
-    private int rating;
+    private Integer rating;
 
     @CreationTimestamp
     private LocalDateTime publishedAt;
@@ -195,11 +195,11 @@ public class Request implements Serializable {
         this.deleteReason = deleteReason;
     }
 
-    public int getRating() {
+    public Integer getRating() {
         return rating;
     }
 
-    public void setRating(int rating) {
+    public void setRating(Integer rating) {
         this.rating = rating;
     }
 

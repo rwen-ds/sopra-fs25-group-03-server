@@ -1,10 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
+import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Request;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,13 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.Request;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * User Service
@@ -137,17 +136,29 @@ public class UserService {
         if (userPutDTO.getBirthday() != null) {
             user.setBirthday(userPutDTO.getBirthday());
         }
+        else {
+            user.setBirthday(null);
+        }
 
         if (userPutDTO.getAge() != null) {
             user.setAge(userPutDTO.getAge());
+        }
+        else {
+            user.setAge(null);
         }
 
         if (userPutDTO.getGender() != null) {
             user.setGender(userPutDTO.getGender());
         }
+        else {
+            user.setGender(null);
+        }
 
         if (userPutDTO.getLanguage() != null) {
             user.setLanguage(userPutDTO.getLanguage());
+        }
+        else {
+            user.setLanguage(null);
         }
 
         if (userPutDTO.getSchool() != null) {

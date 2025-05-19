@@ -45,7 +45,9 @@ public class RequestService {
         if (!user.getUsername().equals("admin")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
         }
-        return this.requestRepository.findAll();
+        return requestRepository.findAll().stream()
+                .filter(request -> request.getStatus() != RequestStatus.DELETED)
+                .collect(Collectors.toList());
     }
 
     public Request createRequest(Request newRequest, Long userId) {
@@ -74,6 +76,9 @@ public class RequestService {
     public Request getRequestById(Long id) {
         Request request = requestRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found with id: " + id));
+        if (request.getStatus() == RequestStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request has been deleted.");
+        }
         return request;
     }
 
@@ -108,11 +113,20 @@ public class RequestService {
         if (updatedRequest.getLatitude() != null) {
             existingRequest.setLatitude(updatedRequest.getLatitude());
         }
+        else {
+            existingRequest.setLatitude(null);
+        }
         if (updatedRequest.getLongitude() != null) {
             existingRequest.setLongitude(updatedRequest.getLongitude());
         }
+        else {
+            existingRequest.setLongitude(null);
+        }
         if (updatedRequest.getCountryCode() != null) {
             existingRequest.setCountryCode(updatedRequest.getCountryCode());
+        }
+        else {
+            existingRequest.setCountryCode(null);
         }
 
         requestRepository.save(existingRequest);
@@ -142,8 +156,11 @@ public class RequestService {
         if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
         }
+        if (existingRequest.getVolunteer() == null || !existingRequest.getVolunteer().getId().equals(volunteerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not accepting the volunteer for this request");
+        }
+
         User volunteer = userService.getUserById(volunteerId);
-        existingRequest.setVolunteer(volunteer);
         existingRequest.setStatus(RequestStatus.ACCEPTING);
         requestRepository.save(existingRequest);
 
@@ -183,7 +200,7 @@ public class RequestService {
         }
         else if (volunteer.getToken().equals(token)) {
             if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED && existingRequest.getStatus() != RequestStatus.ACCEPTING) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "It's not volunteered");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted or volunteered requests can be canceled");
             }
             notificationService.volunteerCancelNotification(existingRequest);
         }
@@ -228,7 +245,7 @@ public class RequestService {
         requestRepository.save(existingRequest);
     }
 
-    public void feedback(Long requestId, String token, String feedback, int rating) {
+    public void feedback(Long requestId, String token, String feedback, Integer rating) {
         Request existingRequest = getRequestById(requestId);
         if (!existingRequest.getPoster().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
@@ -251,7 +268,8 @@ public class RequestService {
     public List<FeedbackDTO> getFeedbackById(Long volunteerId) {
         List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
         return requests.stream()
-                .filter(request -> request.getFeedback() != null)
+                .filter(request -> request.getRating() != null)
+                .filter(request -> !request.getStatus().equals(RequestStatus.DELETED))
                 .map(request -> new FeedbackDTO(request.getId(), request.getFeedback(), request.getRating()))
                 .collect(Collectors.toList());
     }
@@ -259,6 +277,7 @@ public class RequestService {
     public List<RequestGetDTO> getPostRequestsByUserId(Long userId) {
         List<Request> requests = requestRepository.findByPosterId(userId);
         return requests.stream()
+                .filter(request -> !request.getStatus().equals(RequestStatus.DELETED))
                 .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
                 .collect(Collectors.toList());
     }
@@ -266,6 +285,7 @@ public class RequestService {
     public List<RequestGetDTO> getVolunteerRequestsByUserId(Long volunteerId) {
         List<Request> requests = requestRepository.findByVolunteerId(volunteerId);
         return requests.stream()
+                .filter(request -> !request.getStatus().equals(RequestStatus.DELETED))
                 .map(DTOMapper.INSTANCE::convertEntityToRequestGetDTO)
                 .collect(Collectors.toList());
     }

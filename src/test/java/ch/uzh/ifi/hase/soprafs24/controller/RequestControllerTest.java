@@ -249,6 +249,20 @@ public class RequestControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void deleteRequest_deleteDTOWithNullReason() throws Exception {
+        DeleteRequestDTO deleteDTO = new DeleteRequestDTO();
+        deleteDTO.setReason(null);
+
+        doNothing().when(requestService).deleteRequest(eq(1L), eq("validToken"), eq(null));
+
+        mockMvc.perform(put("/requests/1/delete")
+                        .header(AUTH_HEADER, "validToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\": null}"))
+                .andExpect(status().isOk());
+    }
+
 
     @Test
     void acceptRequest_success() throws Exception {

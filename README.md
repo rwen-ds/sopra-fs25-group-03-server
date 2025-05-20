@@ -1,133 +1,90 @@
-# SoPra RESTful Service Template FS25 
+# KindBridge
 
-## Getting started with Spring Boot
+## Introduction
 
--   Documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/index.html
--   Guides: http://spring.io/guides
-    -   Building a RESTful Web Service: http://spring.io/guides/gs/rest-service/
-    -   Building REST services with Spring: https://spring.io/guides/tutorials/rest/
+KindBridge is a community-driven platform designed to connect students who need help with those willing to lend a hand. Many students face difficulties in finding accessible opportunities to contribute to social causes or get help with everyday tasks, such as pet care, airport pickups, or advice on student life abroad. Our motivation is to provide a transparent, efficient, and user-friendly platform that bridges the gap between those who need help and those who can offer it, promoting kindness and support within the student community. 
 
-## Setup this Template with your IDE of choice
+## Technologies
 
-Download your IDE of choice (e.g., [IntelliJ](https://www.jetbrains.com/idea/download/), [Visual Studio Code](https://code.visualstudio.com/), or [Eclipse](http://www.eclipse.org/downloads/)). Make sure Java 17 is installed on your system (for Windows, please make sure your `JAVA_HOME` environment variable is set to the correct version of Java).
+- **Long Polling** – For real-time message.
+- **Google Translate API** – Assists users in translating messages.
+  
 
-### IntelliJ
+## High-level components
 
-If you consider to use IntelliJ as your IDE of choice, you can make use of your free educational license [here](https://www.jetbrains.com/community/education/#students).
+-  **Request Market**
+   - **Role**: Displays all available requests and features an interactive map using the Google Maps JavaScript API, allowing users to view request locations.
+   - **Key File**: [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
+   - **Related To**: `Request` 
 
-1. File -> Open... -> SoPra server template
-2. Accept to import the project as a `gradle project`
-3. To build right click the `build.gradle` file and choose `Run Build`
+- **Request**
+   - **Role**: Represents the details of a request. Allows users to view profiles of both the request creator and volunteer. Additionally, it can open Google Maps based on the selected location.
+   - **Key File**: [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
+   - **Related To**: `Request Market` , `Profile` 
+  
+- **Profile**
+   - **Role**: Displays a user's basic information and shows their request history and feedback.
+   - **Key File**: [`UserService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/UserService.java), [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
+   - **Related To**: `Request` , `Notification`
 
-### VS Code
+- **Notification**
+   - **Role**: Manages notifications related to user activities, informing users of status changes in their requests. It also provides interactive buttons to manage requests.
+   - **Key File**: [`NotificationService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/NotificationService.java)
+   - **Related To**: `Message`, `Request`, `Profile`
 
-The following extensions can help you get started more easily:
+- **Message**
+   - **Role**: Facilitates communication between users.
+   - **Key File**: [`MessageService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/MessageService.java), [`MessageRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/MessageRepository.java)
+   - **Related To**: `Request`, `Notification`, `Profile`
 
--   `vmware.vscode-spring-boot`
--   `vscjava.vscode-spring-initializr`
--   `vscjava.vscode-spring-boot-dashboard`
--   `vscjava.vscode-java-pack`
+## Launch & Deployment
+To get started with the application, follow these steps:
 
-**Note:** You'll need to build the project first with Gradle, just click on the `build` command in the _Gradle Tasks_ extension. Then check the _Spring Boot Dashboard_ extension if it already shows `soprafs24` and hit the play button to start the server. If it doesn't show up, restart VS Code and check again.
+1. **Clone the Repository**:
+   Clone the repository to your local machine using the following command:
+   ```bash
+   git clone https://github.com/rwen-ds/sopra-fs25-group-03-server.git
+   ```
+2. **Build the Project**: 
+    Navigate to the project directory and run the following command to build the application:
+    ```bash
+   ./gradlew build
+   ```
+3. **Run the Application**:
+   After the build is complete, start the backend application with the following command:
+    ```bash
+   ./gradlew bootRun
+   ```
+4. **Run Tests**:
+   Run the tests with the following command:
+   ```bash
+   ./gradlew test
+   ```
+5. **Deployment**:
+   There are no additional dependencies or databases required to run the project locally. Once the changes are pushed to the GitHub repository, they will automatically trigger the deployment process.
 
-## Building with Gradle
+## Roadmap
 
-You can use the local Gradle Wrapper to build the application.
+- **Multi-Volunteers**
+   Implement a feature that allows multiple volunteers to be assigned to a single request. Volunteers can be able to collaborate on tasks, track their progress, and interact with each other and the requester seamlessly. This would enable users to get assistance from multiple volunteers for complex or time-sensitive requests, improving the overall efficiency of the platform and providing users with more support options.
 
--   macOS: `./gradlew`
--   Linux: `./gradlew`
--   Windows: `./gradlew.bat`
+- **Group Chat**
+   Introduce a group chat feature where multiple users (requesters and volunteers) can communicate in real-time. The chat can allow seamless communication between all parties involved in a request.
 
-More Information about [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) and [Gradle](https://gradle.org/docs/).
+## Authors and acknowledgment
 
-### Build
+* **Rong Wen**  - [@rwen-ds](https://github.com/rwen-ds)
+* **Qinrui Deng** - [@mia-aiden](https://github.com/mia-aiden)
+* **Yanjun Guo** - [@YanjunGuo1007](https://github.com/YanjunGuo1007)
+* **Nanxin Wang** - [@adriaWG](https://github.com/adriaWG)
 
-```bash
-./gradlew build
-```
+Special thanks to:
+- [Google Maps API](https://developers.google.com/maps) for providing the maps feature.
+- [Google Translate API](https://cloud.google.com/translate) for enabling multilingual support.
+- **Our TA** for the guidance and feedback during the development process.
+- **Sopra Team** for their support and insights throughout the project.
+- **Group 5** for their valuable feedback.
 
-### Run
+## License
 
-```bash
-./gradlew bootRun
-```
-
-You can verify that the server is running by visiting `localhost:8080` in your browser.
-
-### Test
-
-```bash
-./gradlew test
-```
-
-### Development Mode
-
-You can start the backend in development mode, this will automatically trigger a new build and reload the application
-once the content of a file has been changed.
-
-Start two terminal windows and run:
-
-`./gradlew build --continuous`
-
-and in the other one:
-
-`./gradlew bootRun`
-
-If you want to avoid running all tests with every change, use the following command instead:
-
-`./gradlew build --continuous -xtest`
-
-## API Endpoint Testing with Postman
-
-We recommend using [Postman](https://www.getpostman.com) to test your API Endpoints.
-
-## Debugging
-
-If something is not working and/or you don't know what is going on. We recommend using a debugger and step-through the process step-by-step.
-
-To configure a debugger for SpringBoot's Tomcat servlet (i.e. the process you start with `./gradlew bootRun` command), do the following:
-
-1. Open Tab: **Run**/Edit Configurations
-2. Add a new Remote Configuration and name it properly
-3. Start the Server in Debug mode: `./gradlew bootRun --debug-jvm`
-4. Press `Shift + F9` or the use **Run**/Debug "Name of your task"
-5. Set breakpoints in the application where you need it
-6. Step through the process one step at a time
-
-## Testing
-
-Have a look here: https://www.baeldung.com/spring-boot-testing
-
-<br>
-<br>
-<br>
-
-## Docker
-
-### Introduction
-
-This year, for the first time, Docker will be used to ease the process of deployment.\
-Docker is a tool that uses containers as isolated environments, ensuring that the application runs consistently and uniformly across different devices.\
-Everything in this repository is already set up to minimize your effort for deployment.\
-All changes to the main branch will automatically be pushed to dockerhub and optimized for production.
-
-### Setup
-
-1. **One** member of the team should create an account on [dockerhub](https://hub.docker.com/), _incorporating the group number into the account name_, for example, `SoPra_group_XX`.\
-2. This account then creates a repository on dockerhub with the _same name as the group's Github repository name_.\
-3. Finally, the person's account details need to be added as [secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) to the group's repository:
-    - dockerhub_username (the username of the dockerhub account from step 1, for example, `SoPra_group_XX`)
-    - dockerhub_password (a generated PAT([personal access token](https://docs.docker.com/docker-hub/access-tokens/)) of the account with read and write access)
-    - dockerhub_repo_name (the name of the dockerhub repository from step 2)
-
-### Pull and run
-
-Once the image is created and has been successfully pushed to dockerhub, the image can be run on any machine.\
-Ensure that [Docker](https://www.docker.com/) is installed on the machine you wish to run the container.\
-First, pull (download) the image with the following command, replacing your username and repository name accordingly.
-
-`docker pull <dockerhub_username>/<dockerhub_repo_name>`
-
-Then, run the image in a container with the following command, again replacing _<dockerhub_username>_ and _<dockerhub_repo_name>_ accordingly.
-
-`docker run -p 3000:3000 <dockerhub_username>/<dockerhub_repo_name>`
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

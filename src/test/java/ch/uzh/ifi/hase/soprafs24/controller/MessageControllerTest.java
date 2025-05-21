@@ -2,11 +2,13 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -235,5 +237,74 @@ public class MessageControllerTest {
                 .andExpect(jsonPath("$.message").value(errorMessage));
     }
 
+    @Test
+    public void testSendMessage_serviceThrowsException() throws Exception {
+        MessageDTO messageDTO = new MessageDTO();
+        messageDTO.setSenderId(1L);
+        messageDTO.setRecipientId(2L);
+        messageDTO.setContent("Hello test!");
+
+        String errorMessage = "Error sending message";
+        when(messageService.sendMessage(any(MessageDTO.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage));
+
+        mockMvc.perform(post("/messages/send")
+                        .contentType("application/json")
+                        .content(new ObjectMapper().writeValueAsString(messageDTO)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value(errorMessage));
+    }
+
+    @Test
+    public void testGetNewMessages_success() throws Exception {
+        Long userId = 1L;
+
+        Message message1 = new Message();
+        message1.setId(1L);
+        message1.setSenderId(2L);
+        message1.setRecipientId(userId);
+        message1.setContent("New message 1");
+        message1.setTimestamp(LocalDateTime.now());
+        message1.setRead(false);
+
+        Message message2 = new Message();
+        message2.setId(2L);
+        message2.setSenderId(3L);
+        message2.setRecipientId(userId);
+        message2.setContent("New message 2");
+        message2.setTimestamp(LocalDateTime.now());
+        message2.setRead(false);
+
+        List<Message> unreadMessages = Arrays.asList(message1, message2);
+        when(messageService.getUnreadMessages(userId)).thenReturn(unreadMessages);
+
+        mockMvc.perform(get("/messages/new/{userId}", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[0].senderId").value(2L))
+                .andExpect(jsonPath("$[0].recipientId").value(userId))
+                .andExpect(jsonPath("$[0].content").value("New message 1"))
+                .andExpect(jsonPath("$[0].read").value(false))
+                .andExpect(jsonPath("$[1].id").value(2L))
+                .andExpect(jsonPath("$[1].senderId").value(3L))
+                .andExpect(jsonPath("$[1].recipientId").value(userId))
+                .andExpect(jsonPath("$[1].content").value("New message 2"))
+                .andExpect(jsonPath("$[1].read").value(false));
+    }
+
+    @Test
+    public void testGetNewMessages_emptyList() throws Exception {
+        Long userId = 1L;
+
+        // Mock an empty list of unread messages
+        List<Message> emptyList = Collections.emptyList();
+        when(messageService.getUnreadMessages(userId)).thenReturn(emptyList);
+
+        // Expect an empty array in the response
+        mockMvc.perform(get("/messages/new/{userId}", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
 
 }

@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -266,6 +267,24 @@ public class RequestControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\": null}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testDeleteRequest_withNoBody() throws Exception {
+        Long requestId = 1L;
+        String token = "validToken";
+        
+        // Mock service to accept null reason
+        doNothing().when(requestService).deleteRequest(eq(requestId), eq(token), eq(null));
+        
+        // Send request without body
+        mockMvc.perform(put("/requests/{requestId}/delete", requestId)
+                .header(AUTH_HEADER, token)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+                
+        // Verify service was called with null reason
+        verify(requestService).deleteRequest(eq(requestId), eq(token), eq(null));
     }
 
 

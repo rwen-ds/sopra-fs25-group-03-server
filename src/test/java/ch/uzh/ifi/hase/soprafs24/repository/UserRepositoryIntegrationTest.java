@@ -27,12 +27,12 @@ public class UserRepositoryIntegrationTest {
     @BeforeEach
     public void setup() {
         user = new User();
-        user.setUsername("testuser");
+        user.setUsername("testUser");
         user.setPassword("password");
         user.setCreationDate(LocalDate.parse("2025-02-22"));
         user.setBirthday(LocalDate.parse("2000-01-01"));
         user.setToken("token123");
-        user.setEmail("testuser@example.com");
+        user.setEmail("testuser@edu.example.com");
         user.setStatus(UserStatus.OFFLINE);
         
         entityManager.persist(user);

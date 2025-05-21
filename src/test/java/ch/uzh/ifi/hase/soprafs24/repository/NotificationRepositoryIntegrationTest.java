@@ -1,5 +1,19 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
@@ -7,17 +21,6 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 public class NotificationRepositoryIntegrationTest {
@@ -38,9 +41,9 @@ public class NotificationRepositoryIntegrationTest {
     public void setup() {
         // 创建用户
         recipient = new User();
-        recipient.setUsername("recipient");
+        recipient.setUsername("recipientUser");
         recipient.setPassword("password");
-        recipient.setEmail("recipient@example.com");
+        recipient.setEmail("recipient@edu.example.com");
         recipient.setCreationDate(LocalDate.now());
         recipient.setStatus(UserStatus.OFFLINE);
         recipient.setToken("token-recipient");
@@ -48,9 +51,9 @@ public class NotificationRepositoryIntegrationTest {
         entityManager.persist(recipient);
 
         relatedUser = new User();
-        relatedUser.setUsername("volunteer");
+        relatedUser.setUsername("volunteerUser");
         relatedUser.setPassword("password");
-        relatedUser.setEmail("volunteer@example.com");
+        relatedUser.setEmail("volunteer@edu.example.com");
         relatedUser.setCreationDate(LocalDate.now());
         relatedUser.setStatus(UserStatus.OFFLINE);
         relatedUser.setToken("token-volunteer");

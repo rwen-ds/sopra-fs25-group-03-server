@@ -1,5 +1,29 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
@@ -8,21 +32,7 @@ import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 
 @ExtendWith(MockitoExtension.class)
 public class RequestServiceTest {
@@ -42,14 +52,18 @@ public class RequestServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private DTOMapper dtoMapper;
+
     private User createSampleUser(Long id, String username, String token) {
         User user = new User();
         user.setId(id);
         user.setUsername(username);
-        user.setEmail(username + "@example.com");
+        user.setEmail(username + "@edu.example.com");
         user.setPassword("password");
         user.setCreationDate(LocalDate.now());
         user.setToken(token);
+        user.setIsAdmin(false);
         return user;
     }
 
@@ -531,12 +545,26 @@ public class RequestServiceTest {
 
         // 设置模拟行为
         when(requestRepository.findByPosterId(100L)).thenReturn(requests);
+        
+        // 设置DTOMapper的行为
+        RequestGetDTO dto1 = new RequestGetDTO();
+        dto1.setId(1L);
+        RequestGetDTO dto2 = new RequestGetDTO();
+        dto2.setId(2L);
+        
+        when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
+        when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
+        
+        // 设置RequestService的DTOMapper字段
+        ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
-        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        // 执行测试
         List<RequestGetDTO> result = requestService.getPostRequestsByUserId(100L);
 
-        // 验证结果 - 确认返回了正确数量的DTO对象
+        // 验证结果
         assertEquals(2, result.size());
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request1);
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request2);
     }
 
     @Test
@@ -550,12 +578,26 @@ public class RequestServiceTest {
 
         // 设置模拟行为
         when(requestRepository.findByVolunteerId(200L)).thenReturn(requests);
+        
+        // 设置DTOMapper的行为
+        RequestGetDTO dto1 = new RequestGetDTO();
+        dto1.setId(1L);
+        RequestGetDTO dto2 = new RequestGetDTO();
+        dto2.setId(2L);
+        
+        when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
+        when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
+        
+        // 设置RequestService的DTOMapper字段
+        ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
-        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        // 执行测试
         List<RequestGetDTO> result = requestService.getVolunteerRequestsByUserId(200L);
 
-        // 验证结果 - 确认返回了正确数量的DTO对象
+        // 验证结果
         assertEquals(2, result.size());
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request1);
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request2);
     }
 
     @Test

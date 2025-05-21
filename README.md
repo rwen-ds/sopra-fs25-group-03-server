@@ -7,7 +7,8 @@ KindBridge is a community-driven platform designed to connect students who need 
 ## Technologies
 
 - **Long Polling** – For real-time message.
-- **Google Translate API** – Assists users in translating messages.
+- **Google Translate API** – Assist users in translating messages.
+- **Google Map API** - Assist users in understanding requests
   
 
 ## High-level components
@@ -58,7 +59,7 @@ To get started with the application, follow these steps:
 4. **Run Tests**:
    Run the tests with the following command:
    ```bash
-   ./gradlew test
+   ./gradlew cleanTest test
    ```
 5. **Deployment**:
    There are no additional dependencies or databases required to run the project locally. Once the changes are pushed to the GitHub repository, they will automatically trigger the deployment process.

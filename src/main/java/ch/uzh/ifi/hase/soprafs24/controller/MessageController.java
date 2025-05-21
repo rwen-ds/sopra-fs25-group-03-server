@@ -5,6 +5,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.ContactDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.ErrorResponse;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MessageService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -56,6 +57,7 @@ public class MessageController {
         try {
             List<Message> conversation = messageService.getConversation(senderId, recipientId);
             List<MessageDTO> messageDTOs = conversation.stream().map(msg -> new MessageDTO(
+                    msg.getId(),
                     msg.getSenderId(),
                     msg.getRecipientId(),
                     msg.getContent(),
@@ -87,8 +89,29 @@ public class MessageController {
     }
 
     @PostMapping("/send")
-    public String chat(@RequestBody MessageDTO messageDTO) {
-        messageService.chat(messageDTO);
-        return "sent";
+    public ResponseEntity<?> send(@RequestBody MessageDTO messageDTO) {
+        try {
+            MessageDTO savedMsg = messageService.sendMessage(messageDTO);
+            return ResponseEntity.ok(savedMsg);
+        }
+        catch (ResponseStatusException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(ex.getReason()));
+        }
     }
+
+    @GetMapping("/new/{userId}")
+    public ResponseEntity<List<MessageDTO>> getNewMessages(@PathVariable Long userId) {
+        List<Message> newMessages = messageService.getUnreadMessages(userId);
+        List<MessageDTO> messageDTOs = newMessages.stream().map(msg -> new MessageDTO(
+                msg.getId(),
+                msg.getSenderId(),
+                msg.getRecipientId(),
+                msg.getContent(),
+                msg.getTimestamp(),
+                msg.isRead()
+        )).collect(Collectors.toList());
+
+        return ResponseEntity.ok(messageDTOs);
+    }
+
 }

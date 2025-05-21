@@ -110,8 +110,8 @@ public class MessageControllerTest {
         user.setEmail("test@test.com");
 
         // Mock ContactDTO objects
-        ContactDTO contact1 = new ContactDTO(2L, "contact1", "Last message 1");
-        ContactDTO contact2 = new ContactDTO(3L, "contact2", "Last message 2");
+        ContactDTO contact1 = new ContactDTO(2L, "contact1");
+        ContactDTO contact2 = new ContactDTO(3L, "contact2");
 
         // Mock the service calls
         when(userService.getUserByToken(token)).thenReturn(user);
@@ -122,10 +122,8 @@ public class MessageControllerTest {
                 .andExpect(status().isOk())  // Verify that the response status is OK
                 .andExpect(jsonPath("$[0].id").value(2L))  // Verify the first contact's id
                 .andExpect(jsonPath("$[0].username").value("contact1"))  // Verify the first contact's username
-                .andExpect(jsonPath("$[0].lastMessage").value("Last message 1"))  // Verify the first contact's lastMessage
                 .andExpect(jsonPath("$[1].id").value(3L))  // Verify the second contact's id
-                .andExpect(jsonPath("$[1].username").value("contact2"))  // Verify the second contact's username
-                .andExpect(jsonPath("$[1].lastMessage").value("Last message 2"));  // Verify the second contact's lastMessage
+                .andExpect(jsonPath("$[1].username").value("contact2"));  // Verify the second contact's username
     }
 
     @Test

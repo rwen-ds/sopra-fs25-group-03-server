@@ -71,11 +71,11 @@ public class MessageService {
             if (user == null) continue;
 
             // get the last message
-            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(currentUser.getId(), partnerId);
-            Message lastMessage = messages.isEmpty() ? null : messages.get(0);
-            String preview = lastMessage != null ? lastMessage.getContent() : null;
+//            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(currentUser.getId(), partnerId);
+//            Message lastMessage = messages.isEmpty() ? null : messages.get(0);
+//            String preview = lastMessage != null ? lastMessage.getContent() : null;
 
-            contactDTOs.add(new ContactDTO(user.getId(), user.getUsername(), preview));
+            contactDTOs.add(new ContactDTO(user.getId(), user.getUsername()));
         }
 
         return contactDTOs;
@@ -111,5 +111,24 @@ public class MessageService {
         result.onTimeout(() -> waitingUsers.remove(userId));
 
         return result;
+    }
+
+    public List<Message> getUnreadMessages(Long userId) {
+        return messageRepository.findByRecipientIdAndIsReadFalse(userId);
+    }
+
+    public MessageDTO sendMessage(MessageDTO messageDTO) {
+        Message message = new Message();
+        message.setSenderId(messageDTO.getSenderId());
+        message.setRecipientId(messageDTO.getRecipientId());
+        message.setContent(messageDTO.getContent());
+        message.setTimestamp(LocalDateTime.now());
+        message.setRead(false);
+
+        Message savedMessage = messageRepository.save(message);
+
+        return new MessageDTO(savedMessage.getId(), savedMessage.getSenderId(),
+                savedMessage.getRecipientId(), savedMessage.getContent(),
+                savedMessage.getTimestamp(), savedMessage.isRead());
     }
 }

@@ -38,4 +38,5 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("SELECT COUNT(m) > 0 FROM Message m WHERE m.recipientId = :recipientId AND m.isRead = false")
     boolean existsUnreadByRecipientId(@Param("recipientId") Long recipientId);
 
+    List<Message> findByRecipientIdAndIsReadFalse(Long userId);
 }

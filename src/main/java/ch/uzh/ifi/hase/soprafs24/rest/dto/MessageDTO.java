@@ -4,6 +4,7 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 import java.time.LocalDateTime;
 
 public class MessageDTO {
+    private Long id;
     private Long senderId;
     private Long recipientId;
     private String content;
@@ -13,12 +14,21 @@ public class MessageDTO {
     public MessageDTO() {
     }
 
-    public MessageDTO(Long senderId, Long recipientId, String content, LocalDateTime timestamp, boolean isRead) {
+    public MessageDTO(Long id, Long senderId, Long recipientId, String content, LocalDateTime timestamp, boolean isRead) {
+        this.id = id;
         this.senderId = senderId;
         this.recipientId = recipientId;
         this.content = content;
         this.timestamp = timestamp;
         this.isRead = isRead;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getSenderId() {

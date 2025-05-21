@@ -29,7 +29,7 @@ public class Request implements Serializable {
     @JoinColumn(name = "posterId", nullable = false)
     private User poster;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2000)
     private String description;
 
     @Column
@@ -68,7 +68,7 @@ public class Request implements Serializable {
     private LocalDate deletedAt;
 
     private Long deletedByUserId;
-
+    
     private String deleteReason;
 
     private Double latitude;

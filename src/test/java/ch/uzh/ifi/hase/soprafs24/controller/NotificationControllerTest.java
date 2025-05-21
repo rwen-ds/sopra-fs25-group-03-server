@@ -1,12 +1,18 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
-import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
-import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
-import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
-import ch.uzh.ifi.hase.soprafs24.service.NotificationService;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,25 +22,19 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.web.server.ResponseStatusException;
+
+import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
+import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
+import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
+import ch.uzh.ifi.hase.soprafs24.service.NotificationService;
 
 @WebMvcTest(NotificationController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -57,7 +57,6 @@ public class NotificationControllerTest {
 
     @Test
     public void getUserNotifications_success() throws Exception {
-        // 准备测试数据
         NotificationDTO notification1 = new NotificationDTO();
         notification1.setRecipientId(1L);
         notification1.setRelatedUserId(2L);
@@ -80,15 +79,12 @@ public class NotificationControllerTest {
 
         List<NotificationDTO> notifications = Arrays.asList(notification1, notification2);
 
-        // 模拟服务响应
         given(notificationService.getNotificationDTOS(anyString())).willReturn(notifications);
 
-        // 构建请求
         MockHttpServletRequestBuilder getRequest = get("/notifications")
                 .header("token", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -105,16 +101,13 @@ public class NotificationControllerTest {
 
     @Test
     public void getUserNotifications_error() throws Exception {
-        // 模拟服务抛出异常
         given(notificationService.getNotificationDTOS(anyString()))
                 .willThrow(new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid token"));
 
-        // 构建请求
         MockHttpServletRequestBuilder getRequest = get("/notifications")
                 .header("token", "invalid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(getRequest)
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message", is("Invalid token")));
@@ -122,31 +115,25 @@ public class NotificationControllerTest {
 
     @Test
     public void markNotificationsAsRead_success() throws Exception {
-        // 模拟服务行为 - 不抛出异常表示成功
         doNothing().when(notificationService).markNotificationsAsRead(anyString());
 
-        // 构建请求
         MockHttpServletRequestBuilder putRequest = put("/notifications/mark-read")
                 .header("token", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(putRequest)
                 .andExpect(status().isNoContent());
     }
 
     @Test
     public void markNotificationsAsRead_error() throws Exception {
-        // 模拟服务抛出异常
         doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid token"))
                 .when(notificationService).markNotificationsAsRead(anyString());
 
-        // 构建请求
         MockHttpServletRequestBuilder putRequest = put("/notifications/mark-read")
                 .header("token", "invalid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(putRequest)
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message", is("Invalid token")));
@@ -154,19 +141,15 @@ public class NotificationControllerTest {
 
     @Test
     public void getUnreadNotifications_success() throws Exception {
-        // 准备测试数据
         Map<String, Boolean> response = new HashMap<>();
         response.put("hasUnread", true);
 
-        // 模拟服务响应
         given(notificationService.getUnreadNotifications(anyString())).willReturn(response);
 
-        // 构建请求
         MockHttpServletRequestBuilder getRequest = get("/notifications/unread")
                 .header("token", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.hasUnread", is(true)));
@@ -174,16 +157,13 @@ public class NotificationControllerTest {
 
     @Test
     public void getUnreadNotifications_error() throws Exception {
-        // 模拟服务抛出异常
         given(notificationService.getUnreadNotifications(anyString()))
                 .willThrow(new ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid token"));
 
-        // 构建请求
         MockHttpServletRequestBuilder getRequest = get("/notifications/unread")
                 .header("token", "invalid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // 执行请求并检验结果
         mockMvc.perform(getRequest)
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message", is("Invalid token")));
@@ -208,7 +188,7 @@ public class NotificationControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.put("/notifications/{notificationId}/mark-read", notificationId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())  // 期望返回404 Not Found
+                .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Notification not found"));
     }
 }

@@ -39,7 +39,6 @@ public class NotificationRepositoryIntegrationTest {
 
     @BeforeEach
     public void setup() {
-        // 创建用户
         recipient = new User();
         recipient.setUsername("recipientUser");
         recipient.setPassword("password");
@@ -60,7 +59,6 @@ public class NotificationRepositoryIntegrationTest {
         relatedUser.setIsAdmin(false);
         entityManager.persist(relatedUser);
 
-        // 创建请求
         request = new Request();
         request.setTitle("Help needed");
         request.setDescription("Need help with something");
@@ -70,7 +68,6 @@ public class NotificationRepositoryIntegrationTest {
         request.setEmergencyLevel(RequestEmergencyLevel.MEDIUM);
         entityManager.persist(request);
 
-        // 创建通知
         notification1 = new Notification();
         notification1.setRecipientId(recipient.getId());
         notification1.setRelatedUserId(relatedUser.getId());
@@ -81,7 +78,6 @@ public class NotificationRepositoryIntegrationTest {
         notification1.setIsRead(false);
         entityManager.persist(notification1);
 
-        // 第二个通知 (已读)
         notification2 = new Notification();
         notification2.setRecipientId(recipient.getId());
         notification2.setRelatedUserId(relatedUser.getId());
@@ -118,7 +114,6 @@ public class NotificationRepositoryIntegrationTest {
         boolean hasUnread = notificationRepository.existsByRecipientIdAndIsReadFalse(recipient.getId());
         assertTrue(hasUnread);
 
-        // 将所有通知标记为已读
         notification1.setIsRead(true);
         entityManager.persist(notification1);
         entityManager.flush();

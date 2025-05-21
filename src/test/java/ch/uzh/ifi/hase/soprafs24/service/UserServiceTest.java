@@ -182,21 +182,17 @@ public class UserServiceTest {
 
     @Test
     public void testLogin_invalidPassword() {
-        // 创建测试输入
         User userInput = new User();
         userInput.setUsername("testUsername");
         userInput.setPassword("wrongpassword");
 
-        // 创建存储在数据库中的用户
         User existingUser = new User();
         existingUser.setId(1L);
         existingUser.setUsername("testUsername");
         existingUser.setPassword("password");
 
-        // 设置Mock行为
         when(userRepository.findByUsername(userInput.getUsername())).thenReturn(existingUser);
 
-        // 执行测试并验证异常
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.login(userInput);
         });

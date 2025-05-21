@@ -340,7 +340,6 @@ public class UserServiceIntegrationTest {
 
     @Test
     public void testUpdateUser_unauthorized() {
-        // create two users
         User userA = new User();
         userA.setUsername("userA");
         userA.setEmail("userA@edu.example.com");
@@ -353,7 +352,6 @@ public class UserServiceIntegrationTest {
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
-        // userB try to update information of userA, token is not matched
         ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
         putDTO.setUsername("newUsername");
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {

@@ -98,20 +98,4 @@ public class MessageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(ex.getReason()));
         }
     }
-
-    @GetMapping("/new/{userId}")
-    public ResponseEntity<List<MessageDTO>> getNewMessages(@PathVariable Long userId) {
-        List<Message> newMessages = messageService.getUnreadMessages(userId);
-        List<MessageDTO> messageDTOs = newMessages.stream().map(msg -> new MessageDTO(
-                msg.getId(),
-                msg.getSenderId(),
-                msg.getRecipientId(),
-                msg.getContent(),
-                msg.getTimestamp(),
-                msg.isRead()
-        )).collect(Collectors.toList());
-
-        return ResponseEntity.ok(messageDTOs);
-    }
-
 }

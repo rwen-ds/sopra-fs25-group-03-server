@@ -68,13 +68,14 @@ public class MessageService {
         for (Long partnerId : partnerIds) {
             User user = userRepository.findById(partnerId).orElse(null);
             if (user == null) continue;
+            boolean hasUnread = messageRepository.hasUnreadMessages(partnerId, currentUser.getId());
 
             // get the last message
 //            List<Message> messages = messageRepository.findTopByUserPairOrderByTimestampDesc(currentUser.getId(), partnerId);
 //            Message lastMessage = messages.isEmpty() ? null : messages.get(0);
 //            String preview = lastMessage != null ? lastMessage.getContent() : null;
 
-            contactDTOs.add(new ContactDTO(user.getId(), user.getUsername()));
+            contactDTOs.add(new ContactDTO(user.getId(), user.getUsername(), hasUnread));
         }
 
         return contactDTOs;

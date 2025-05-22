@@ -105,8 +105,8 @@ public class MessageControllerTest {
         user.setEmail("test@test.com");
 
         // Mock ContactDTO objects
-        ContactDTO contact1 = new ContactDTO(2L, "contact1");
-        ContactDTO contact2 = new ContactDTO(3L, "contact2");
+        ContactDTO contact1 = new ContactDTO(2L, "contact1", false);
+        ContactDTO contact2 = new ContactDTO(3L, "contact2", false);
 
         // Mock the service calls
         when(userService.getUserByToken(token)).thenReturn(user);

@@ -1,5 +1,35 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
@@ -13,30 +43,6 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestPostDTO;
 import ch.uzh.ifi.hase.soprafs24.security.AuthFilter;
 import ch.uzh.ifi.hase.soprafs24.service.RequestService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(RequestController.class)
 @AutoConfigureMockMvc(addFilters = false)  // close Filter
@@ -261,6 +267,24 @@ public class RequestControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\": null}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testDeleteRequest_withNoBody() throws Exception {
+        Long requestId = 1L;
+        String token = "validToken";
+        
+        // Mock service to accept null reason
+        doNothing().when(requestService).deleteRequest(eq(requestId), eq(token), eq(null));
+        
+        // Send request without body
+        mockMvc.perform(put("/requests/{requestId}/delete", requestId)
+                .header(AUTH_HEADER, token)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+                
+        // Verify service was called with null reason
+        verify(requestService).deleteRequest(eq(requestId), eq(token), eq(null));
     }
 
 

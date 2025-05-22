@@ -67,7 +67,7 @@ public class UserControllerTest {
     User user = new User();
     user.setId(id);
     user.setUsername(username);
-    user.setEmail(username + "@example.com");
+    user.setEmail(username + "@edu.example.com");
     user.setPassword("password");
     user.setCreationDate(java.time.LocalDate.now());
     user.setToken(token);
@@ -126,8 +126,8 @@ public class UserControllerTest {
   public void createUser_validInput_userCreated() throws Exception {
     UserPostDTO userPostDTO = new UserPostDTO();
     userPostDTO.setUsername("testUsername");
-    userPostDTO.setEmail("testUsername@example.com");
-    userPostDTO.setPassword("password");
+    userPostDTO.setPassword("testPassword");
+    userPostDTO.setEmail("testUsername@edu.example.com");
 
     User createdUser = createSampleUser(3L, "testUsername", "token3");
     createdUser.setStatus(UserStatus.ONLINE);
@@ -153,9 +153,9 @@ public class UserControllerTest {
   @Test
   public void createUser_duplicateUsername_returns409() throws Exception {
     UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setUsername("duplicateUsername");
-    userPostDTO.setEmail("duplicate@example.com");
-    userPostDTO.setPassword("password");
+    userPostDTO.setUsername("testUsername2");
+    userPostDTO.setPassword("testPassword2");
+    userPostDTO.setEmail("duplicate@edu.example.com");
 
     when(userService.createUser(Mockito.any()))
         .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User with this email/username already exists"));
@@ -306,7 +306,7 @@ public class UserControllerTest {
     userPutDTO.setUsername("updatedUsername");
     String jsonInput = asJsonString(userPutDTO);
 
-    doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot edit another user’s profile"))
+    doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot edit another user's profile"))
         .when(userService).updateUser(eq(5L), any(UserPutDTO.class), eq("badToken"));
 
     MockHttpServletRequestBuilder putRequest = put("/users/5")
@@ -316,7 +316,7 @@ public class UserControllerTest {
 
     mockMvc.perform(putRequest)
         .andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.message", is("Cannot edit another user’s profile")));
+        .andExpect(jsonPath("$.message", is("Cannot edit another user's profile")));
   }
 
   @Test

@@ -66,7 +66,7 @@ To get started with the application, follow these steps:
 4. **Run Tests**:
    Run the tests with the following command:
    ```bash
-   ./gradlew test
+   ./gradlew cleanTest test
    ```
 5. **Deployment**:
    There are no additional dependencies or databases required to run the project locally. Once the changes are pushed to

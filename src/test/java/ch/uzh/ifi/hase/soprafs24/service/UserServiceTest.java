@@ -1,25 +1,31 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -49,12 +55,12 @@ public class UserServiceTest {
     @Test
     public void testCreateUser_success() {
         User newUser = new User();
-        newUser.setUsername("testuser");
-        newUser.setEmail("test@example.com");
+        newUser.setUsername("testUsername");
         newUser.setPassword("password");
+        newUser.setEmail("test@edu.example.com");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(null);
-        when(userRepository.findByEmail("test@example.com")).thenReturn(null);
+        when(userRepository.findByUsername("testUsername")).thenReturn(null);
+        when(userRepository.findByEmail("test@edu.example.com")).thenReturn(null);
 
         when(userRepository.save(ArgumentMatchers.any(User.class))).thenAnswer(invocation -> {
             User userArg = invocation.getArgument(0);
@@ -77,14 +83,14 @@ public class UserServiceTest {
     public void testCreateUser_conflict_username() {
 
         User newUser = new User();
-        newUser.setUsername("testuser");
-        newUser.setEmail("test@example.com");
+        newUser.setUsername("testUsername");
         newUser.setPassword("password");
+        newUser.setEmail("test@edu.example.com");
 
         User existingUser = new User();
         existingUser.setId(10L);
-        existingUser.setUsername("testuser");
-        when(userRepository.findByUsername("testuser")).thenReturn(existingUser);
+        existingUser.setUsername("testUsername");
+        when(userRepository.findByUsername("testUsername")).thenReturn(existingUser);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.createUser(newUser);
@@ -96,15 +102,16 @@ public class UserServiceTest {
     public void testCreateUser_conflict_email() {
 
         User newUser = new User();
-        newUser.setUsername("uniqueuser");
-        newUser.setEmail("duplicate@example.com");
+        newUser.setUsername("testUsername");
         newUser.setPassword("password");
+        newUser.setEmail("test@edu.example.com");
 
-        when(userRepository.findByUsername("uniqueuser")).thenReturn(null);
+        when(userRepository.findByUsername("testUsername")).thenReturn(null);
         User existingUser = new User();
         existingUser.setId(11L);
-        existingUser.setEmail("duplicate@example.com");
-        when(userRepository.findByEmail("duplicate@example.com")).thenReturn(existingUser);
+        existingUser.setUsername("testUsername");
+        existingUser.setEmail("test@edu.example.com");
+        when(userRepository.findByEmail("test@edu.example.com")).thenReturn(existingUser);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.createUser(newUser);
@@ -137,19 +144,19 @@ public class UserServiceTest {
 
         User user = new User();
         user.setId(1L);
-        user.setUsername("testuser");
+        user.setUsername("testUsername");
         user.setPassword("password");
         user.setStatus(UserStatus.OFFLINE);
         user.setToken("oldToken");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(user);
+        when(userRepository.findByUsername("testUsername")).thenReturn(user);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 
         User result = userService.login(user);
 
 
-        assertEquals("testuser", result.getUsername());
+        assertEquals("testUsername", result.getUsername());
         assertEquals("password", result.getPassword());
         assertEquals(UserStatus.ONLINE, result.getStatus());
 
@@ -175,21 +182,17 @@ public class UserServiceTest {
 
     @Test
     public void testLogin_invalidPassword() {
-        // 创建测试输入
         User userInput = new User();
-        userInput.setUsername("testuser");
+        userInput.setUsername("testUsername");
         userInput.setPassword("wrongpassword");
 
-        // 创建存储在数据库中的用户
         User existingUser = new User();
         existingUser.setId(1L);
-        existingUser.setUsername("testuser");
+        existingUser.setUsername("testUsername");
         existingUser.setPassword("password");
 
-        // 设置Mock行为
         when(userRepository.findByUsername(userInput.getUsername())).thenReturn(existingUser);
 
-        // 执行测试并验证异常
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             userService.login(userInput);
         });
@@ -248,7 +251,7 @@ public class UserServiceTest {
         // given
         User user = new User();
         user.setId(1L);
-        user.setUsername("testuser");
+        user.setUsername("testUsername");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         when(userRepository.findByToken("validToken")).thenReturn(user);

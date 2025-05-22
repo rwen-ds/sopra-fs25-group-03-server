@@ -27,11 +27,11 @@ public class RequestRepositoryIntegrationTest {
     @Test
     public void findById_success() {
         User poster = new User();
-        poster.setUsername("testuser");
+        poster.setUsername("testUser");
         poster.setPassword("password");
         poster.setCreationDate(LocalDate.parse("2025-02-22"));
         poster.setToken("token123");
-        poster.setEmail("testuser@example.com");
+        poster.setEmail("testuser@edu.example.com");
         poster.setStatus(UserStatus.OFFLINE);
 
         entityManager.persist(poster);
@@ -66,6 +66,6 @@ public class RequestRepositoryIntegrationTest {
         assertEquals(RequestEmergencyLevel.LOW, testRequest.getEmergencyLevel());
         assertEquals(LocalDate.now(), testRequest.getCreationDate());
         assertNotNull(testRequest.getPoster());
-        assertEquals("testuser", testRequest.getPoster().getUsername());
+        assertEquals("testUser", testRequest.getPoster().getUsername());
     }
 }

@@ -1,18 +1,22 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 
 @SpringBootTest
@@ -31,11 +35,11 @@ public class UserServiceIntegrationTest {
 
         User user1 = new User();
         user1.setUsername("integrationUser1");
-        user1.setEmail("integration1@example.com");
+        user1.setEmail("integration1@edu.example.com");
         user1.setPassword("password1");
         User user2 = new User();
         user2.setUsername("integrationUser2");
-        user2.setEmail("integration2@example.com");
+        user2.setEmail("integration2@edu.example.com");
         user2.setPassword("password2");
 
         userService.createUser(user1);
@@ -51,7 +55,7 @@ public class UserServiceIntegrationTest {
 
         User newUser = new User();
         newUser.setUsername("integrationUser");
-        newUser.setEmail("integration@example.com");
+        newUser.setEmail("integration@edu.example.com");
         newUser.setPassword("password");
 
 
@@ -73,13 +77,13 @@ public class UserServiceIntegrationTest {
     public void testCreateUser_conflictUsername() {
         User user1 = new User();
         user1.setUsername("conflictUser");
-        user1.setEmail("unique1@example.com");
+        user1.setEmail("unique1@edu.example.com");
         user1.setPassword("password");
         userService.createUser(user1);
 
         User user2 = new User();
         user2.setUsername("conflictUser");
-        user2.setEmail("unique2@example.com");
+        user2.setEmail("unique2@edu.example.com");
         user2.setPassword("password");
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
@@ -92,13 +96,13 @@ public class UserServiceIntegrationTest {
     public void testCreateUser_conflictEmail() {
         User user1 = new User();
         user1.setUsername("uniqueUser1");
-        user1.setEmail("conflict@example.com");
+        user1.setEmail("conflict@edu.example.com");
         user1.setPassword("password");
         userService.createUser(user1);
 
         User user2 = new User();
         user2.setUsername("uniqueUser2");
-        user2.setEmail("conflict@example.com");
+        user2.setEmail("conflict@edu.example.com");
         user2.setPassword("password");
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
@@ -111,7 +115,7 @@ public class UserServiceIntegrationTest {
     public void testGetUserByIdIntegration_success() {
         User newUser = new User();
         newUser.setUsername("getUser");
-        newUser.setEmail("getuser@example.com");
+        newUser.setEmail("getuser@edu.example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
 
@@ -131,7 +135,7 @@ public class UserServiceIntegrationTest {
     public void testUpdateUser_userNotFound() {
         User user = new User();
         user.setUsername("updateNonExist");
-        user.setEmail("updateNonExist@example.com");
+        user.setEmail("updateNonExist@edu.example.com");
         user.setPassword("password");
         User createdUser = userService.createUser(user);
 
@@ -147,13 +151,13 @@ public class UserServiceIntegrationTest {
     public void testUpdateUser_conflictUsername() {
         User userA = new User();
         userA.setUsername("userA_conflict");
-        userA.setEmail("userA_conflict@example.com");
+        userA.setEmail("userA_conflict@edu.example.com");
         userA.setPassword("password");
         User createdA = userService.createUser(userA);
 
         User userB = new User();
         userB.setUsername("userB_conflict");
-        userB.setEmail("userB_conflict@example.com");
+        userB.setEmail("userB_conflict@edu.example.com");
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
@@ -169,18 +173,18 @@ public class UserServiceIntegrationTest {
     public void testUpdateUser_conflictEmail() {
         User userA = new User();
         userA.setUsername("userA_conflictEmail");
-        userA.setEmail("userA_conflictEmail@example.com");
+        userA.setEmail("userA_conflictEmail@edu.example.com");
         userA.setPassword("password");
         User createdA = userService.createUser(userA);
 
         User userB = new User();
         userB.setUsername("userB_conflictEmail");
-        userB.setEmail("userB_conflictEmail@example.com");
+        userB.setEmail("userB_conflictEmail@edu.example.com");
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
         ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
-        putDTO.setEmail("userA_conflictEmail@example.com");
+        putDTO.setEmail("userA_conflictEmail@edu.example.com");
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
             userService.updateUser(createdB.getId(), putDTO, createdB.getToken());
         });
@@ -192,7 +196,7 @@ public class UserServiceIntegrationTest {
 
         User newUser = new User();
         newUser.setUsername("loginUser");
-        newUser.setEmail("loginuser@example.com");
+        newUser.setEmail("loginuser@edu.example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
         String oldToken = createdUser.getToken();
@@ -229,7 +233,7 @@ public class UserServiceIntegrationTest {
     public void testLogin_invalidPassword() {
         User user = new User();
         user.setUsername("loginTestUser");
-        user.setEmail("loginTest@example.com");
+        user.setEmail("loginTest@edu.example.com");
         user.setPassword("correctPassword");
         userService.createUser(user);
 
@@ -265,7 +269,7 @@ public class UserServiceIntegrationTest {
 
         User newUser = new User();
         newUser.setUsername("deleteUser");
-        newUser.setEmail("deleteuser@example.com");
+        newUser.setEmail("deleteuser@edu.example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
 
@@ -283,34 +287,34 @@ public class UserServiceIntegrationTest {
 
         User newUser = new User();
         newUser.setUsername("updateUser");
-        newUser.setEmail("updateuser@example.com");
+        newUser.setEmail("updateuser@edu.example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
 
 
         ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO userPutDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
         userPutDTO.setUsername("updatedUser");
-        userPutDTO.setEmail("updateduser@example.com");
+        userPutDTO.setEmail("updateduser@edu.example.com");
 
 
         userService.updateUser(createdUser.getId(), userPutDTO, createdUser.getToken());
 
         User updatedUser = userService.getUserById(createdUser.getId());
         assertEquals("updatedUser", updatedUser.getUsername());
-        assertEquals("updateduser@example.com", updatedUser.getEmail());
+        assertEquals("updateduser@edu.example.com", updatedUser.getEmail());
     }
 
     @Test
     public void testDeleteUser_unauthorized() {
         User userA = new User();
         userA.setUsername("deleteUserA");
-        userA.setEmail("deleteUserA@example.com");
+        userA.setEmail("deleteUserA@edu.example.com");
         userA.setPassword("password");
         User createdA = userService.createUser(userA);
 
         User userB = new User();
         userB.setUsername("deleteUserB");
-        userB.setEmail("deleteUserB@example.com");
+        userB.setEmail("deleteUserB@edu.example.com");
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
@@ -324,7 +328,7 @@ public class UserServiceIntegrationTest {
     public void testDeleteUser_userNotFound() {
         User newUser = new User();
         newUser.setUsername("nonExistDelete");
-        newUser.setEmail("nonExistDelete@example.com");
+        newUser.setEmail("nonExistDelete@edu.example.com");
         newUser.setPassword("password");
         User createdUser = userService.createUser(newUser);
 
@@ -336,20 +340,18 @@ public class UserServiceIntegrationTest {
 
     @Test
     public void testUpdateUser_unauthorized() {
-        // create two users
         User userA = new User();
         userA.setUsername("userA");
-        userA.setEmail("userA@example.com");
+        userA.setEmail("userA@edu.example.com");
         userA.setPassword("password");
         User createdA = userService.createUser(userA);
 
         User userB = new User();
         userB.setUsername("userB");
-        userB.setEmail("userB@example.com");
+        userB.setEmail("userB@edu.example.com");
         userB.setPassword("password");
         User createdB = userService.createUser(userB);
 
-        // userB try to update information of userA, token is not matched
         ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO putDTO = new ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO();
         putDTO.setUsername("newUsername");
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {

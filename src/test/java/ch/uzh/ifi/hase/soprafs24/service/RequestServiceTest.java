@@ -1,5 +1,29 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
@@ -8,21 +32,7 @@ import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 
 @ExtendWith(MockitoExtension.class)
 public class RequestServiceTest {
@@ -42,14 +52,18 @@ public class RequestServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private DTOMapper dtoMapper;
+
     private User createSampleUser(Long id, String username, String token) {
         User user = new User();
         user.setId(id);
         user.setUsername(username);
-        user.setEmail(username + "@example.com");
+        user.setEmail(username + "@edu.example.com");
         user.setPassword("password");
         user.setCreationDate(LocalDate.now());
         user.setToken(token);
+        user.setIsAdmin(false);
         return user;
     }
 
@@ -305,20 +319,20 @@ public class RequestServiceTest {
 
     @Test
     public void testVolunteerRequest_success() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.WAITING, poster);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userService.getUserByToken("volunteerToken")).thenReturn(volunteer);
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 执行测试
+        // Execute the test
         requestService.volunteerRequest(1L, "volunteerToken");
 
-        // 验证结果
+        // Verify results
         assertEquals(RequestStatus.VOLUNTEERED, request.getStatus());
         assertEquals(volunteer, request.getVolunteer());
         verify(notificationService).volunteerNotification(request, volunteer);
@@ -326,15 +340,15 @@ public class RequestServiceTest {
 
     @Test
     public void testVolunteerRequest_ownRequest_throwsBadRequest() {
-        // 设置请求和用户 - 用户尝试为自己的请求做志愿者
+        // Set up request and user - user tries to volunteer for their own request
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.WAITING, poster);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userService.getUserByToken("posterToken")).thenReturn(poster);
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.volunteerRequest(1L, "posterToken");
         });
@@ -343,17 +357,17 @@ public class RequestServiceTest {
 
     @Test
     public void testVolunteerRequest_notWaiting_throwsBadRequest() {
-        // 设置请求和用户 - 请求已经有志愿者了
+        // Set up request and users - request already has a volunteer
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer1 = createSampleUser(200L, "volunteer1", "volunteer1Token");
         User volunteer2 = createSampleUser(300L, "volunteer2", "volunteer2Token");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer1);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userService.getUserByToken("volunteer2Token")).thenReturn(volunteer2);
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.volunteerRequest(1L, "volunteer2Token");
         });
@@ -362,33 +376,33 @@ public class RequestServiceTest {
 
     @Test
     public void testMarkRequestAsDone_success() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 执行测试
+        // Execute the test
         requestService.markRequestAsDone(1L, "posterToken");
 
-        // 验证结果
+        // Verify results
         assertEquals(RequestStatus.DONE, request.getStatus());
     }
 
     @Test
     public void testMarkRequestAsDone_invalidToken_throwsUnauthorized() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.markRequestAsDone(1L, "wrongToken");
         });
@@ -397,15 +411,15 @@ public class RequestServiceTest {
 
     @Test
     public void testMarkRequestAsDone_invalidStatus_throwsBadRequest() {
-        // 设置请求和用户 - 请求状态不是COMPLETED
+        // Set up request and users - request status is not COMPLETED
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.ACCEPTING, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.markRequestAsDone(1L, "posterToken");
         });
@@ -414,19 +428,19 @@ public class RequestServiceTest {
 
     @Test
     public void testFeedback_success() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.DONE, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 执行测试
+        // Execute the test
         requestService.feedback(1L, "posterToken", "Great help!", 5);
 
-        // 验证结果
+        // Verify results
         assertEquals("Great help!", request.getFeedback());
         assertEquals(5, request.getRating());
         verify(notificationService).feedbackNotification(request);
@@ -434,15 +448,15 @@ public class RequestServiceTest {
 
     @Test
     public void testFeedback_invalidToken_throwsUnauthorized() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.DONE, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.feedback(1L, "wrongToken", "Great help!", 5);
         });
@@ -451,15 +465,15 @@ public class RequestServiceTest {
 
     @Test
     public void testFeedback_invalidStatus_throwsBadRequest() {
-        // 设置请求和用户 - 请求状态不是DONE
+        // Set up request and users - request status is not DONE
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.COMPLETED, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.feedback(1L, "posterToken", "Great help!", 5);
         });
@@ -468,20 +482,20 @@ public class RequestServiceTest {
 
     @Test
     public void testGetRequestByPoster_success() {
-        // 设置请求和用户
+        // Set up request and user
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, poster);
         Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster);
         List<Request> posterRequests = Arrays.asList(request1, request2);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(userService.getUserByToken("posterToken")).thenReturn(poster);
         when(requestRepository.findByPoster(poster)).thenReturn(posterRequests);
 
-        // 执行测试
+        // Execute the test
         List<Request> result = requestService.getRequestByPoster("posterToken");
 
-        // 验证结果
+        // Verify results
         assertEquals(2, result.size());
         assertEquals("Request 1", result.get(0).getTitle());
         assertEquals("Request 2", result.get(1).getTitle());
@@ -489,11 +503,11 @@ public class RequestServiceTest {
 
     @Test
     public void testGetFeedbackById_success() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
 
-        // 创建两个有反馈的请求和一个没有反馈的请求
+        // Create two requests with feedback and one without
         Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.DONE, poster, volunteer);
         request1.setFeedback("Excellent service");
         request1.setRating(5);
@@ -503,17 +517,17 @@ public class RequestServiceTest {
         request2.setRating(4);
 
         Request request3 = createSampleRequest(3L, "Request 3", RequestStatus.DONE, poster, volunteer);
-        // 没有设置反馈
+        // No feedback set
 
         List<Request> volunteerRequests = Arrays.asList(request1, request2, request3);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findByVolunteerId(200L)).thenReturn(volunteerRequests);
 
-        // 执行测试
+        // Execute the test
         List<FeedbackDTO> feedbacks = requestService.getFeedbackById(200L);
 
-        // 验证结果
+        // Verify results
         assertEquals(2, feedbacks.size());
         assertEquals("Excellent service", feedbacks.get(0).getFeedback());
         assertEquals(5, feedbacks.get(0).getRating());
@@ -523,49 +537,77 @@ public class RequestServiceTest {
 
     @Test
     public void testGetPostRequestsByUserId_success() {
-        // 设置请求和用户
+        // Set up request and user
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.WAITING, poster);
         Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster);
         List<Request> requests = Arrays.asList(request1, request2);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findByPosterId(100L)).thenReturn(requests);
+        
+        // Set up DTOMapper behavior
+        RequestGetDTO dto1 = new RequestGetDTO();
+        dto1.setId(1L);
+        RequestGetDTO dto2 = new RequestGetDTO();
+        dto2.setId(2L);
+        
+        when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
+        when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
+        
+        // Set DTOMapper field for RequestService
+        ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
-        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        // Execute the test
         List<RequestGetDTO> result = requestService.getPostRequestsByUserId(100L);
 
-        // 验证结果 - 确认返回了正确数量的DTO对象
+        // Verify results
         assertEquals(2, result.size());
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request1);
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request2);
     }
 
     @Test
     public void testGetVolunteerRequestsByUserId_success() {
-        // 设置请求和用户
+        // Set up request and user
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request1 = createSampleRequest(1L, "Request 1", RequestStatus.VOLUNTEERED, poster, volunteer);
         Request request2 = createSampleRequest(2L, "Request 2", RequestStatus.COMPLETED, poster, volunteer);
         List<Request> requests = Arrays.asList(request1, request2);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findByVolunteerId(200L)).thenReturn(requests);
+        
+        // Set up DTOMapper behavior
+        RequestGetDTO dto1 = new RequestGetDTO();
+        dto1.setId(1L);
+        RequestGetDTO dto2 = new RequestGetDTO();
+        dto2.setId(2L);
+        
+        when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
+        when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
+        
+        // Set DTOMapper field for RequestService
+        ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
-        // 执行测试 - 由于无法直接模拟静态DTOMapper.INSTANCE，我们将验证返回的请求对象
+        // Execute the test
         List<RequestGetDTO> result = requestService.getVolunteerRequestsByUserId(200L);
 
-        // 验证结果 - 确认返回了正确数量的DTO对象
+        // Verify results
         assertEquals(2, result.size());
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request1);
+        verify(dtoMapper, times(1)).convertEntityToRequestGetDTO(request2);
     }
 
     @Test
     public void testCreateRequest_missingTitle_throwsBadRequest() {
-        // 创建缺少标题的请求
+        // Create a request missing the title
         Request newRequest = new Request();
         newRequest.setDescription("Test Description");
         newRequest.setEmergencyLevel(RequestEmergencyLevel.LOW);
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.createRequest(newRequest, 1L);
         });
@@ -574,12 +616,12 @@ public class RequestServiceTest {
 
     @Test
     public void testCreateRequest_missingDescription_throwsBadRequest() {
-        // 创建缺少描述的请求
+        // Create a request missing the description
         Request newRequest = new Request();
         newRequest.setTitle("Test Title");
         newRequest.setEmergencyLevel(RequestEmergencyLevel.LOW);
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.createRequest(newRequest, 1L);
         });
@@ -588,12 +630,12 @@ public class RequestServiceTest {
 
     @Test
     public void testCreateRequest_missingEmergencyLevel_throwsBadRequest() {
-        // 创建缺少紧急程度的请求
+        // Create a request missing the emergency level
         Request newRequest = new Request();
         newRequest.setTitle("Test Title");
         newRequest.setDescription("Test Description");
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.createRequest(newRequest, 1L);
         });
@@ -602,11 +644,11 @@ public class RequestServiceTest {
 
     @Test
     public void testGetRequests_notAdmin_throwsUnauthorized() {
-        // 设置非管理员用户
+        // Set up a non-admin user
         User user = createSampleUser(100L, "regularUser", "userToken");
         when(userService.getUserByToken("userToken")).thenReturn(user);
 
-        // 执行测试并验证异常
+        // Execute test and verify exception
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.getRequests("userToken");
         });
@@ -615,15 +657,15 @@ public class RequestServiceTest {
 
     @Test
     public void testCompleteRequest_invalidToken_throwsUnauthorized() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.ACCEPTING, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常 - 使用发布者的令牌而不是志愿者的令牌
+        // Execute test and verify exception - using poster's token instead of volunteer's
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.completeRequest(1L, "posterToken");
         });
@@ -632,19 +674,19 @@ public class RequestServiceTest {
 
     @Test
     public void testCancelRequest_volunteerCancels_success() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(requestRepository.save(any(Request.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // 执行测试 - 志愿者取消
+        // Execute test - volunteer cancels
         requestService.cancelRequest(1L, "volunteerToken");
 
-        // 验证结果
+        // Verify results
         assertEquals(RequestStatus.WAITING, request.getStatus());
         assertNull(request.getVolunteer());
         verify(notificationService).volunteerCancelNotification(request);
@@ -652,16 +694,16 @@ public class RequestServiceTest {
 
     @Test
     public void testCancelRequest_invalidUser_throwsUnauthorized() {
-        // 设置请求和用户
+        // Set up request and users
         User poster = createSampleUser(100L, "posterUser", "posterToken");
         User volunteer = createSampleUser(200L, "volunteerUser", "volunteerToken");
         User otherUser = createSampleUser(300L, "otherUser", "otherToken");
         Request request = createSampleRequest(1L, "Help needed", RequestStatus.VOLUNTEERED, poster, volunteer);
 
-        // 设置模拟行为
+        // Set up mock behavior
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-        // 执行测试并验证异常 - 使用其他用户的令牌
+        // Execute test and verify exception - using another user's token
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.cancelRequest(1L, "otherToken");
         });

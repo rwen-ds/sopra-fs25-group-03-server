@@ -23,9 +23,9 @@ public class DTOMapperTest {
   public void testCreateUser_fromUserPostDTO_toUser_success() {
     // create UserPostDTO
     UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setUsername("username");
-    userPostDTO.setEmail("user@example.com");
-    userPostDTO.setPassword("securePassword");
+    userPostDTO.setUsername("name");
+    userPostDTO.setPassword("password");
+    userPostDTO.setEmail("user@edu.example.com");
 
     User user = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
 
@@ -40,7 +40,8 @@ public class DTOMapperTest {
     User user = new User();
     user.setId(1L); 
     user.setUsername("firstname@lastname");
-    user.setEmail("firstname.lastname@example.com");
+    user.setPassword("password");
+    user.setEmail("firstname.lastname@edu.example.com");
     user.setStatus(UserStatus.OFFLINE);
     user.setToken("1");
     

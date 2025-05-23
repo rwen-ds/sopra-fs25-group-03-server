@@ -91,23 +91,19 @@ public class NotificationServiceTest {
 
     @Test
     public void volunteerNotification_createsCorrectNotifications() {
-        // 当调用save方法时，直接返回保存的通知对象
         when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArguments()[0]);
 
         notificationService.volunteerNotification(request, volunteer);
 
-        // 验证save方法被调用了两次
         verify(notificationRepository, times(2)).save(notificationCaptor.capture());
 
         List<Notification> capturedNotifications = notificationCaptor.getAllValues();
         assertEquals(2, capturedNotifications.size());
 
-        // 第一个通知：给poster的通知
         assertEquals(poster.getId(), capturedNotifications.get(0).getRecipientId());
         assertEquals(volunteer.getId(), capturedNotifications.get(0).getRelatedUserId());
         assertEquals(NotificationType.VOLUNTEERED, capturedNotifications.get(0).getType());
 
-        // 第二个通知：给volunteer的通知
         assertEquals(volunteer.getId(), capturedNotifications.get(1).getRecipientId());
         assertEquals(poster.getId(), capturedNotifications.get(1).getRelatedUserId());
         assertEquals(NotificationType.VOLUNTEERING, capturedNotifications.get(1).getType());
@@ -153,7 +149,6 @@ public class NotificationServiceTest {
 
         notificationService.markNotificationsAsRead(token);
 
-        // 验证所有通知都被标记为已读
         verify(notificationRepository).saveAll(ArgumentMatchers.argThat(list ->
                 ((List<Notification>) list).stream().allMatch(Notification::getIsRead)
         ));
@@ -161,7 +156,6 @@ public class NotificationServiceTest {
 
     @Test
     public void getNotificationDTOS_returnsCorrectDTOs() {
-        // 准备数据
         List<Notification> notifications = new ArrayList<>();
         notifications.add(notification);
 
@@ -170,15 +164,12 @@ public class NotificationServiceTest {
         notificationDTO.setType(notification.getType());
         notificationDTO.setRequestId(request.getId());
 
-        // 调整 NotificationService 类的实现以允许测试
-        // 创建测试专用的NotificationService实例，覆盖依赖于静态方法的代码
         NotificationService testService = new NotificationService(notificationRepository, userService) {
             @Override
             public List<NotificationDTO> getNotificationDTOS(String token) {
                 User user = userService.getUserByToken(token);
                 List<Notification> notifs = notificationRepository.findByRecipientIdOrderByTimestampDesc(user.getId());
 
-                // 直接创建DTO而不使用静态映射器
                 List<NotificationDTO> dtos = new ArrayList<>();
                 for (Notification n : notifs) {
                     NotificationDTO dto = new NotificationDTO();
@@ -191,14 +182,11 @@ public class NotificationServiceTest {
             }
         };
 
-        // 模拟存储库和服务
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.findByRecipientIdOrderByTimestampDesc(poster.getId())).thenReturn(notifications);
 
-        // 调用被测试方法
         List<NotificationDTO> result = testService.getNotificationDTOS(token);
 
-        // 验证结果
         assertEquals(1, result.size());
         assertEquals(notification.getRecipientId(), result.get(0).getRecipientId());
         assertEquals(notification.getType(), result.get(0).getType());

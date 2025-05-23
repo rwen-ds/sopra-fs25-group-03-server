@@ -16,7 +16,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_withNullClient_throwsException() {
-        // 测试client为null时的情况，由于无法连接到Google API会抛出异常
         String originalText = "Hello World";
         String targetLanguage = "de";
 
@@ -29,7 +28,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_emptyText_throwsException() {
-        // 测试空文本
         String originalText = "";
         String targetLanguage = "de";
 
@@ -42,7 +40,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_nullText_throwsException() {
-        // 测试null文本
         String originalText = null;
         String targetLanguage = "de";
 
@@ -55,7 +52,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_nullTargetLanguage_throwsException() {
-        // 测试null目标语言
         String originalText = "Hello World";
         String targetLanguage = null;
 
@@ -68,7 +64,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_invalidLanguageCode_throwsException() {
-        // 测试无效的语言代码
         String originalText = "Hello World";
         String targetLanguage = "invalid_language_code_12345";
 
@@ -81,7 +76,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_longText_throwsException() {
-        // 测试非常长的文本
         StringBuilder longText = new StringBuilder();
         for (int i = 0; i < 10000; i++) {
             longText.append("This is a very long text that might cause issues. ");
@@ -97,7 +91,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_specialCharacters_throwsException() {
-        // 测试特殊字符
         String originalText = "Hello! @#$%^&*()_+ 123 世界 🌍🚀";
         String targetLanguage = "ja";
 
@@ -110,7 +103,6 @@ public class TranslationServiceTest {
 
     @Test
     public void translateText_serviceNotAvailable_throwsInternalServerError() {
-        // 由于Google Translation Service不可用，所有调用都会抛出异常
         String originalText = "Simple text";
         String targetLanguage = "fr";
 

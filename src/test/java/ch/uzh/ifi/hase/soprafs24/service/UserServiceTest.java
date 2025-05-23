@@ -7,6 +7,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
@@ -22,10 +23,12 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import ch.uzh.ifi.hase.soprafs24.constant.UserGender;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -287,5 +290,364 @@ public class UserServiceTest {
             userService.deleteUser(1L, "token");
         });
         assertTrue(exception.getMessage().contains("was not found"));
+    }
+
+    @Test
+    public void testCreateUser_adminUsername_throwsBadRequest() {
+        User newUser = new User();
+        newUser.setUsername("admin");
+        newUser.setPassword("password");
+        newUser.setEmail("admin@edu.example.com");
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.createUser(newUser);
+        });
+        assertTrue(exception.getMessage().contains("reserved and cannot be used"));
+    }
+
+    @Test
+    public void testCreateUser_invalidEmail_throwsUnprocessableEntity() {
+        User newUser = new User();
+        newUser.setUsername("testUser");
+        newUser.setPassword("password");
+        newUser.setEmail("invalid@gmail.com");
+
+        when(userRepository.findByUsername("testUser")).thenReturn(null);
+        when(userRepository.findByEmail("invalid@gmail.com")).thenReturn(null);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.createUser(newUser);
+        });
+        assertTrue(exception.getMessage().contains("Only student email addresses"));
+    }
+
+    @Test
+    public void testCreateUser_validUzhEmail_success() {
+        User newUser = new User();
+        newUser.setUsername("testUser");
+        newUser.setPassword("password");
+        newUser.setEmail("test@uzh.ch");
+
+        when(userRepository.findByUsername("testUser")).thenReturn(null);
+        when(userRepository.findByEmail("test@uzh.ch")).thenReturn(null);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User userArg = invocation.getArgument(0);
+            userArg.setId(1L);
+            return userArg;
+        });
+
+        User result = userService.createUser(newUser);
+
+        assertNotNull(result);
+        assertEquals("testUser", result.getUsername());
+        assertEquals("test@uzh.ch", result.getEmail());
+    }
+
+    @Test
+    public void testCreateUser_validEthzEmail_success() {
+        User newUser = new User();
+        newUser.setUsername("testUser");
+        newUser.setPassword("password");
+        newUser.setEmail("test@ethz.ch");
+
+        when(userRepository.findByUsername("testUser")).thenReturn(null);
+        when(userRepository.findByEmail("test@ethz.ch")).thenReturn(null);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User userArg = invocation.getArgument(0);
+            userArg.setId(1L);
+            return userArg;
+        });
+
+        User result = userService.createUser(newUser);
+
+        assertNotNull(result);
+        assertEquals("test@ethz.ch", result.getEmail());
+    }
+
+    @Test
+    public void testCreateUser_validStuEmail_success() {
+        User newUser = new User();
+        newUser.setUsername("testUser");
+        newUser.setPassword("password");
+        newUser.setEmail("test@student.ch");
+
+        when(userRepository.findByUsername("testUser")).thenReturn(null);
+        when(userRepository.findByEmail("test@student.ch")).thenReturn(null);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User userArg = invocation.getArgument(0);
+            userArg.setId(1L);
+            return userArg;
+        });
+
+        User result = userService.createUser(newUser);
+
+        assertNotNull(result);
+        assertEquals("test@student.ch", result.getEmail());
+    }
+
+    @Test
+    public void testUpdateUser_success() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("oldUsername");
+        existingUser.setEmail("old@edu.example.com");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setUsername("newUsername");
+        userPutDTO.setEmail("new@edu.example.com");
+        userPutDTO.setAge(25);
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername("newUsername")).thenReturn(null);
+        when(userRepository.findByEmail("new@edu.example.com")).thenReturn(null);
+
+        userService.updateUser(1L, userPutDTO, "validToken");
+
+        assertEquals("newUsername", existingUser.getUsername());
+        assertEquals("new@edu.example.com", existingUser.getEmail());
+        assertEquals(25, existingUser.getAge());
+        verify(userRepository).save(existingUser);
+        verify(userRepository).flush();
+    }
+
+    @Test
+    public void testUpdateUser_adminCanUpdateOtherUser() {
+        User adminUser = new User();
+        adminUser.setId(2L);
+        adminUser.setUsername("admin");
+        adminUser.setToken("adminToken");
+
+        User targetUser = new User();
+        targetUser.setId(1L);
+        targetUser.setUsername("targetUser");
+        targetUser.setEmail("target@edu.example.com");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setUsername("updatedUsername");
+
+        when(userRepository.findByToken("adminToken")).thenReturn(adminUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(targetUser));
+        when(userRepository.findByUsername("updatedUsername")).thenReturn(null);
+
+        userService.updateUser(1L, userPutDTO, "adminToken");
+
+        assertEquals("updatedUsername", targetUser.getUsername());
+        verify(userRepository).save(targetUser);
+    }
+
+    @Test
+    public void testUpdateUser_unauthorized() {
+        User loginUser = new User();
+        loginUser.setId(2L);
+        loginUser.setUsername("otherUser");
+        loginUser.setToken("validToken");
+
+        User targetUser = new User();
+        targetUser.setId(1L);
+        targetUser.setUsername("targetUser");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setUsername("newUsername");
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(targetUser));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(1L, userPutDTO, "validToken");
+        });
+        assertTrue(exception.getMessage().contains("unauthorized user"));
+    }
+
+    @Test
+    public void testUpdateUser_conflictUsername() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("oldUsername");
+
+        User conflictUser = new User();
+        conflictUser.setId(2L);
+        conflictUser.setUsername("conflictUsername");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setUsername("conflictUsername");
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername("conflictUsername")).thenReturn(conflictUser);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(1L, userPutDTO, "validToken");
+        });
+        assertTrue(exception.getMessage().contains("already exists"));
+    }
+
+    @Test
+    public void testUpdateUser_conflictEmail() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setEmail("old@edu.example.com");
+
+        User conflictUser = new User();
+        conflictUser.setId(2L);
+        conflictUser.setEmail("conflict@edu.example.com");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setEmail("conflict@edu.example.com");
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmail("conflict@edu.example.com")).thenReturn(conflictUser);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            userService.updateUser(1L, userPutDTO, "validToken");
+        });
+        assertTrue(exception.getMessage().contains("already exists"));
+    }
+
+    @Test
+    public void testUpdateUser_nullFields() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("testUser");
+        existingUser.setAge(30);
+        existingUser.setBirthday(LocalDate.of(1990, 1, 1));
+        existingUser.setGender(UserGender.MALE);
+        existingUser.setLanguage("English");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        // All fields null
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+
+        userService.updateUser(1L, userPutDTO, "validToken");
+
+        assertNull(existingUser.getAge());
+        assertNull(existingUser.getBirthday());
+        assertNull(existingUser.getGender());
+        assertNull(existingUser.getLanguage());
+        verify(userRepository).save(existingUser);
+    }
+
+    @Test
+    public void testUpdateUser_sameUsernameNoChange() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setUsername("testUser");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setUsername("testUser"); // Same username
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+
+        userService.updateUser(1L, userPutDTO, "validToken");
+
+        assertEquals("testUser", existingUser.getUsername());
+        verify(userRepository).save(existingUser);
+        verify(userRepository, times(0)).findByUsername("testUser"); // Should not check for conflict
+    }
+
+    @Test
+    public void testUpdateUser_sameEmailNoChange() {
+        User loginUser = new User();
+        loginUser.setId(1L);
+        loginUser.setUsername("testUser");
+        loginUser.setToken("validToken");
+
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setEmail("test@edu.example.com");
+
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setEmail("test@edu.example.com"); // Same email
+
+        when(userRepository.findByToken("validToken")).thenReturn(loginUser);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+
+        userService.updateUser(1L, userPutDTO, "validToken");
+
+        assertEquals("test@edu.example.com", existingUser.getEmail());
+        verify(userRepository).save(existingUser);
+        verify(userRepository, times(0)).findByEmail("test@edu.example.com"); // Should not check for conflict
+    }
+
+    @Test
+    public void testDeleteUser_adminCanDeleteAnyUser() {
+        User adminUser = new User();
+        adminUser.setId(2L);
+        adminUser.setUsername("admin");
+        adminUser.setToken("adminToken");
+
+        User targetUser = new User();
+        targetUser.setId(1L);
+        targetUser.setUsername("targetUser");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(targetUser));
+        when(userRepository.findByToken("adminToken")).thenReturn(adminUser);
+        when(requestRepository.findByVolunteer(targetUser)).thenReturn(Arrays.asList());
+
+        userService.deleteUser(1L, "adminToken");
+
+        verify(userRepository).delete(targetUser);
+    }
+
+    @Test
+    public void testDeleteUser_withVolunteerRequests() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setToken("validToken");
+
+        ch.uzh.ifi.hase.soprafs24.entity.Request request1 = new ch.uzh.ifi.hase.soprafs24.entity.Request();
+        request1.setId(1L);
+        request1.setVolunteer(user);
+        request1.setStatus(ch.uzh.ifi.hase.soprafs24.constant.RequestStatus.VOLUNTEERED);
+
+        ch.uzh.ifi.hase.soprafs24.entity.Request request2 = new ch.uzh.ifi.hase.soprafs24.entity.Request();
+        request2.setId(2L);
+        request2.setVolunteer(user);
+        request2.setStatus(ch.uzh.ifi.hase.soprafs24.constant.RequestStatus.ACCEPTING);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByToken("validToken")).thenReturn(user);
+        when(requestRepository.findByVolunteer(user)).thenReturn(Arrays.asList(request1, request2));
+
+        userService.deleteUser(1L, "validToken");
+
+        // Verify requests are updated
+        assertNull(request1.getVolunteer());
+        assertEquals(ch.uzh.ifi.hase.soprafs24.constant.RequestStatus.WAITING, request1.getStatus());
+        assertNull(request2.getVolunteer());
+        assertEquals(ch.uzh.ifi.hase.soprafs24.constant.RequestStatus.WAITING, request2.getStatus());
+
+        verify(requestRepository, times(2)).save(any(ch.uzh.ifi.hase.soprafs24.entity.Request.class));
+        verify(userRepository).delete(user);
     }
 }

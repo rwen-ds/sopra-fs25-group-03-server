@@ -1,5 +1,30 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
 import ch.uzh.ifi.hase.soprafs24.constant.NotificationType;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Notification;
@@ -8,22 +33,6 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.NotificationRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.NotificationDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -200,18 +209,53 @@ public class NotificationServiceTest {
         when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(true);
 
-        Map<String, Boolean> response = notificationService.getUnreadNotifications(token);
+        Map<String, Boolean> result = notificationService.getUnreadNotifications(token);
 
-        assertTrue(response.containsKey("hasUnread"));
-        assertTrue(response.get("hasUnread"));
+        assertTrue(result.get("hasUnread"));
+        verify(notificationRepository).existsByRecipientIdAndIsReadFalse(poster.getId());
+    }
 
-        // 测试无未读通知的情况
+    @Test
+    public void getUnreadNotifications_noUnread_returnsFalse() {
+        when(userService.getUserByToken(token)).thenReturn(poster);
         when(notificationRepository.existsByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(false);
 
-        response = notificationService.getUnreadNotifications(token);
+        Map<String, Boolean> result = notificationService.getUnreadNotifications(token);
 
-        assertTrue(response.containsKey("hasUnread"));
-        assertFalse(response.get("hasUnread"));
+        assertFalse(result.get("hasUnread"));
+    }
+
+    @Test
+    public void markNotificationAsRead_success() {
+        Long notificationId = 1L;
+        when(notificationRepository.findById(notificationId)).thenReturn(java.util.Optional.of(notification));
+
+        notificationService.markNotificationAsRead(notificationId);
+
+        assertTrue(notification.getIsRead());
+        verify(notificationRepository).save(notification);
+    }
+
+    @Test
+    public void markNotificationAsRead_notFound_throwsBadRequest() {
+        Long notificationId = 1L;
+        when(notificationRepository.findById(notificationId)).thenReturn(java.util.Optional.empty());
+
+        Exception exception = assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
+            notificationService.markNotificationAsRead(notificationId);
+        });
+
+        assertTrue(exception.getMessage().contains("Notification not found"));
+    }
+
+    @Test
+    public void markNotificationsAsRead_emptyList() {
+        when(userService.getUserByToken(token)).thenReturn(poster);
+        when(notificationRepository.findByRecipientIdAndIsReadFalse(poster.getId())).thenReturn(new ArrayList<>());
+
+        notificationService.markNotificationsAsRead(token);
+
+        verify(notificationRepository).saveAll(new ArrayList<>());
     }
 
     @Test

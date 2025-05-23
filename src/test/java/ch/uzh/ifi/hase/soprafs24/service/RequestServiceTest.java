@@ -199,21 +199,48 @@ public class RequestServiceTest {
 
         verify(requestRepository, times(1)).save(existingRequest);
         verify(notificationRepository, times(1)).deleteByRequest(existingRequest);
+        assertEquals(RequestStatus.DELETED, existingRequest.getStatus());
+        assertEquals("Some reason", existingRequest.getDeleteReason());
     }
 
     @Test
-    public void testDeleteRequest_invalidToken_throwsUnauthorized() {
-        User poster = createSampleUser(100L, "posterUser", "correctToken");
+    public void testDeleteRequest_withNullReason() {
+        User poster = createSampleUser(100L, "posterUser", "token");
         Request existingRequest = createSampleRequest(1L, "Title", RequestStatus.WAITING, poster);
-        when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
 
-        User fakeUser = createSampleUser(200L, "notAdmin", "wrongToken");
-        when(userService.getUserByToken("wrongToken")).thenReturn(fakeUser);
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(existingRequest));
+        when(userService.getUserByToken("token")).thenReturn(poster);
+
+        assertDoesNotThrow(() -> requestService.deleteRequest(1L, "token", null));
+
+        verify(requestRepository, times(1)).save(existingRequest);
+        assertEquals(RequestStatus.DELETED, existingRequest.getStatus());
+        assertNull(existingRequest.getDeleteReason());
+    }
+
+    @Test
+    public void testDeleteRequest_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
-            requestService.deleteRequest(1L, "wrongToken", "");
+            requestService.deleteRequest(1L, "token", "reason");
         });
-        assertTrue(exception.getMessage().contains("Invalid token"));
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
+    }
+
+    @Test
+    public void testUpdateRequest_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Request update = new Request();
+        update.setTitle("New Title");
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.updateRequest(1L, update, "token");
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
     }
 
     @Test
@@ -270,6 +297,32 @@ public class RequestServiceTest {
     }
 
     @Test
+    public void testCompleteRequest_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.completeRequest(1L, "token");
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
+    }
+
+    @Test
+    public void testCompleteRequest_noVolunteer_throwsBadRequest() {
+        User volunteer = createSampleUser(200L, "volunteer", "volunteerToken");
+        Request request = createSampleRequest(1L, "Title", RequestStatus.ACCEPTING, createSampleUser(100L, "poster", "token"));
+        request.setVolunteer(null); // No volunteer
+
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.completeRequest(1L, "volunteerToken");
+        });
+
+        assertTrue(exception.getMessage().contains("Only accepted requests can be completed"));
+    }
+
+    @Test
     public void testCancelRequest_success() {
         User poster = createSampleUser(100L, "posterUser", "token");
         User volunteer = createSampleUser(100L, "volunteerUser", "volunteerToken");
@@ -292,6 +345,17 @@ public class RequestServiceTest {
             requestService.cancelRequest(1L, "token");
         });
         assertTrue(exception.getMessage().contains("Only accepted or volunteered requests can be canceled"));
+    }
+
+    @Test
+    public void testCancelRequest_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.cancelRequest(1L, "token");
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
     }
 
     @Test
@@ -708,5 +772,104 @@ public class RequestServiceTest {
             requestService.cancelRequest(1L, "otherToken");
         });
         assertTrue(exception.getMessage().contains("Invalid user"));
+    }
+
+    @Test
+    public void testGetRequests_invalidToken_throwsUnauthorized() {
+        User nonAdmin = createSampleUser(100L, "user", "userToken");
+        when(userService.getUserByToken("userToken")).thenReturn(nonAdmin);
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.getRequests("userToken");
+        });
+
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+
+    @Test
+    public void testVolunteerRequest_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.volunteerRequest(1L, "token");
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
+    }
+
+    @Test
+    public void testVolunteerRequest_alreadyHasVolunteer_throwsBadRequest() {
+        User poster = createSampleUser(100L, "poster", "posterToken");
+        User existingVolunteer = createSampleUser(200L, "existingVolunteer", "existingToken");
+        User newVolunteer = createSampleUser(300L, "newVolunteer", "newToken");
+        
+        Request request = createSampleRequest(1L, "Title", RequestStatus.VOLUNTEERED, poster, existingVolunteer);
+
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userService.getUserByToken("newToken")).thenReturn(newVolunteer);
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.volunteerRequest(1L, "newToken");
+        });
+
+        assertTrue(exception.getMessage().contains("You can only volunteer for requests that are still waiting"));
+    }
+
+    @Test
+    public void testMarkRequestAsDone_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.markRequestAsDone(1L, "token");
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
+    }
+
+    @Test
+    public void testFeedback_requestNotFound_throwsNotFound() {
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.feedback(1L, "token", "Great work!", 5);
+        });
+
+        assertTrue(exception.getMessage().contains("Request not found with id: 1"));
+    }
+
+    @Test
+    public void testGetRequestByPoster_userNotFound() {
+        when(userService.getUserByToken("invalidToken")).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Invalid token"));
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.getRequestByPoster("invalidToken");
+        });
+
+        assertTrue(exception.getMessage().contains("Invalid token"));
+    }
+
+    @Test
+    public void testGetFeedbackById_userNotFound() {
+        when(requestRepository.findByVolunteerId(1L)).thenReturn(Arrays.asList());
+
+        List<FeedbackDTO> result = requestService.getFeedbackById(1L);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testCreateRequest_userNotFound_throwsNotFound() {
+        when(userService.getUserById(1L)).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
+
+        Request newRequest = new Request();
+        newRequest.setTitle("Test Request Title");
+        newRequest.setDescription("Test Request Description");
+        newRequest.setEmergencyLevel(RequestEmergencyLevel.LOW);
+
+        Exception exception = assertThrows(ResponseStatusException.class, () -> {
+            requestService.createRequest(newRequest, 1L);
+        });
+
+        assertTrue(exception.getMessage().contains("User not found"));
     }
 }

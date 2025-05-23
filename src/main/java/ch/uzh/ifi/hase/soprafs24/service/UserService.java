@@ -63,7 +63,8 @@ public class UserService {
                     "The email " + newUser.getEmail() + " already exists.");
         }
         String checkEmail = newUser.getEmail();
-        if (!(checkEmail.contains("uzh") || checkEmail.contains("ethz") || checkEmail.contains("edu") || checkEmail.contains("stu"))) {
+        String domain = checkEmail.split("@")[1];
+        if (!(domain.contains("uzh") || domain.contains("ethz") || domain.contains("edu") || domain.contains("stu"))) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Notice! Only student email addresses containing \"stu\", \"edu\", \"ethz\", or \"uzh\" are supported for registration.");
         }

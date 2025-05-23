@@ -64,8 +64,8 @@ public class UserService {
         }
         String checkEmail = newUser.getEmail();
         if (!(checkEmail.contains("uzh") || checkEmail.contains("ethz") || checkEmail.contains("edu") || checkEmail.contains("stu"))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "The email " + checkEmail + " is not valid.");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Notice! Only student email addresses containing \"stu\", \"edu\", \"ethz\", or \"uzh\" are supported for registration.");
         }
         // initialize
         newUser.setToken(UUID.randomUUID().toString());

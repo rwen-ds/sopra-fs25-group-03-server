@@ -1,29 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
-
 import ch.uzh.ifi.hase.soprafs24.constant.RequestEmergencyLevel;
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
@@ -33,6 +9,22 @@ import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RequestServiceTest {
@@ -268,7 +260,7 @@ public class RequestServiceTest {
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.acceptRequest(1L, 200L);
         });
-        assertTrue(exception.getMessage().contains("Request is not in a state to accept a volunteer"));
+        assertTrue(exception.getMessage().contains("Only requests with status VOLUNTEERED can be accepted"));
     }
 
     @Test
@@ -293,7 +285,7 @@ public class RequestServiceTest {
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.completeRequest(1L, "volunteerToken");
         });
-        assertTrue(exception.getMessage().contains("Only accepted requests can be completed"));
+        assertTrue(exception.getMessage().contains("Only requests with ACCEPTING status can be completed"));
     }
 
     @Test
@@ -319,7 +311,7 @@ public class RequestServiceTest {
             requestService.completeRequest(1L, "volunteerToken");
         });
 
-        assertTrue(exception.getMessage().contains("Only accepted requests can be completed"));
+        assertTrue(exception.getMessage().contains("Only requests with ACCEPTING status can be completed"));
     }
 
     @Test
@@ -344,7 +336,7 @@ public class RequestServiceTest {
         Exception exception = assertThrows(ResponseStatusException.class, () -> {
             requestService.cancelRequest(1L, "token");
         });
-        assertTrue(exception.getMessage().contains("Only accepted or volunteered requests can be canceled"));
+        assertTrue(exception.getMessage().contains("Only requests with status ACCEPTING or VOLUNTEERED can be canceled"));
     }
 
     @Test
@@ -609,16 +601,16 @@ public class RequestServiceTest {
 
         // Set up mock behavior
         when(requestRepository.findByPosterId(100L)).thenReturn(requests);
-        
+
         // Set up DTOMapper behavior
         RequestGetDTO dto1 = new RequestGetDTO();
         dto1.setId(1L);
         RequestGetDTO dto2 = new RequestGetDTO();
         dto2.setId(2L);
-        
+
         when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
         when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
-        
+
         // Set DTOMapper field for RequestService
         ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
@@ -642,16 +634,16 @@ public class RequestServiceTest {
 
         // Set up mock behavior
         when(requestRepository.findByVolunteerId(200L)).thenReturn(requests);
-        
+
         // Set up DTOMapper behavior
         RequestGetDTO dto1 = new RequestGetDTO();
         dto1.setId(1L);
         RequestGetDTO dto2 = new RequestGetDTO();
         dto2.setId(2L);
-        
+
         when(dtoMapper.convertEntityToRequestGetDTO(request1)).thenReturn(dto1);
         when(dtoMapper.convertEntityToRequestGetDTO(request2)).thenReturn(dto2);
-        
+
         // Set DTOMapper field for RequestService
         ReflectionTestUtils.setField(requestService, "dtoMapper", dtoMapper);
 
@@ -802,7 +794,7 @@ public class RequestServiceTest {
         User poster = createSampleUser(100L, "poster", "posterToken");
         User existingVolunteer = createSampleUser(200L, "existingVolunteer", "existingToken");
         User newVolunteer = createSampleUser(300L, "newVolunteer", "newToken");
-        
+
         Request request = createSampleRequest(1L, "Title", RequestStatus.VOLUNTEERED, poster, existingVolunteer);
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));

@@ -1,17 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import ch.uzh.ifi.hase.soprafs24.constant.RequestStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Request;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -20,6 +8,17 @@ import ch.uzh.ifi.hase.soprafs24.repository.RequestRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FeedbackDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.RequestGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -156,10 +155,10 @@ public class RequestService {
     public void acceptRequest(Long requestId, Long volunteerId) {
         Request existingRequest = getRequestById(requestId);
         if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request is not in a state to accept a volunteer");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests with status VOLUNTEERED can be accepted");
         }
         if (existingRequest.getVolunteer() == null || !existingRequest.getVolunteer().getId().equals(volunteerId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not accepting the volunteer for this request");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You can only accept the volunteer who applied for this request");
         }
 
         User volunteer = userService.getUserById(volunteerId);
@@ -172,7 +171,7 @@ public class RequestService {
     public void completeRequest(Long id, String token) {
         Request existingRequest = getRequestById(id);
         if (existingRequest.getStatus() != RequestStatus.ACCEPTING || existingRequest.getVolunteer() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted requests can be completed");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests with ACCEPTING status can be completed");
         }
         if (!existingRequest.getVolunteer().getToken().equals(token)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
@@ -196,13 +195,13 @@ public class RequestService {
         }
         if (poster.getToken().equals(token)) {
             if (existingRequest.getStatus() != RequestStatus.ACCEPTING && existingRequest.getStatus() != RequestStatus.VOLUNTEERED) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted or volunteered requests can be canceled");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests with status ACCEPTING or VOLUNTEERED can be canceled");
             }
             notificationService.posterCancelNotification(existingRequest);
         }
         else if (volunteer.getToken().equals(token)) {
             if (existingRequest.getStatus() != RequestStatus.VOLUNTEERED && existingRequest.getStatus() != RequestStatus.ACCEPTING) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only accepted or volunteered requests can be canceled");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only requests with status ACCEPTING or VOLUNTEERED can be canceled");
             }
             notificationService.volunteerCancelNotification(existingRequest);
         }

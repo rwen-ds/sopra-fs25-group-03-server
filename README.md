@@ -14,35 +14,46 @@ offer it, promoting kindness and support within the student community.
 
 ## High-level components
 
-- **Request Market**
-    - **Role**: Displays all available requests and features an interactive map using the Google Maps JavaScript API,
-      allowing users to view request locations.
-    - **Key File**: [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
-    - **Related To**: `Request`
+### 1. REST API Layer (Controllers)
+- **Role**: Handle HTTP requests, validate input parameters, and delegate calls to the corresponding service layer. Acts as the interface layer between frontend and backend, responsible for routing and data transfer.
+- **Key Files**: 
+  - [`RequestController`](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/Requestcontroller.java) - Manages help request related API endpoints
+  - [`UserController`](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/Usercontroller.java) - Handles user authentication and user management
+  - [`MessageController`](src/main/java/ch/uzh/ifi/hase/soprafs24/controller/MessageController.java) - Processes inter-user message communication
+- **Related To**: `Service Layer`
 
-- **Request**
-    - **Role**: Represents the details of a request. Allows users to view profiles of both the request creator and
-      volunteer. Additionally, it can open Google Maps based on the selected location.
-    - **Key File**: [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
-    - **Related To**: `Request Market` , `Profile`
+### 2. Business Logic Layer (Services)  
+- **Role**: Implement core business logic and workflows such as user registration, JWT authentication, request creation/updates, notification management, etc. Coordinate transactional operations across multiple repositories.
+- **Key Files**:
+  - [`UserService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/UserService.java) - User management and authentication logic
+  - [`RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java) - Help request business logic
+  - [`MessageService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/MessageService.java) - Message processing and management
+  - [`NotificationService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/NotificationService.java) - Notification management, handles request status change notifications
+- **Related To**: `Controllers`, `Repositories`, `External Services`
 
-- **Profile**
-    - **Role**: Displays a user's basic information and shows their request history and feedback.
-    - **Key File**: [`UserService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/UserService.java), [
-      `RequestService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/RequestService.java)
-    - **Related To**: `Request` , `Notification`
+### 3. Data Access Layer (Repositories)
+- **Role**: Provide database abstraction layer using Spring Data JPA for CRUD operations and custom queries. Manage entity lifecycle to optimize performance.
+- **Key Files**: 
+  - [`UserRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/UserRepository.java) - User data access
+  - [`RequestRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/RequestRepository.java) - Request data access
+  - [`MessageRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/MessageRepository.java) - Message data access
+  - [`NotificationRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/NotificationRepository.java) - Notification data access
+- **Related To**: `Services`, `Entities`
 
-- **Notification**
-    - **Role**: Manages notifications related to user activities, informing users of status changes in their requests.
-      It also provides interactive buttons to manage requests.
-    - **Key File**: [`NotificationService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/NotificationService.java)
-    - **Related To**: `Message`, `Request`, `Profile`
+### 4. Data Model Layer (Entities)
+- **Role**: Define domain models using JPA annotations for object-relational mapping. Represent the core data structures and entity relationships of the application.
+- **Key Files**:
+  - [`User`](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/User.java) - User entity
+  - [`Request`](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/Request.java) - Help request entity
+  - [`Message`](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/Message.java) - Message entity
+  - [`Notification`](src/main/java/ch/uzh/ifi/hase/soprafs24/entity/Notification.java) - Notification entity
+- **Related To**: `Repositories`
 
-- **Message**
-    - **Role**: Facilitates communication between users.
-    - **Key File**: [`MessageService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/MessageService.java), [
-      `MessageRepository`](src/main/java/ch/uzh/ifi/hase/soprafs24/repository/MessageRepository.java)
-    - **Related To**: `Request`, `Notification`, `Profile`
+### 5. External Integration Layer
+- **Role**: Integrate external services such as Google Cloud Translation API to provide additional functionality. Handle third-party API calls and error handling.
+- **Key Files**: 
+  - [`TranslationService`](src/main/java/ch/uzh/ifi/hase/soprafs24/service/TranslationService.java) - Google Translate API integration, supports multilingual message translation
+- **Related To**: `Business Logic Layer`
 
 ## Launch & Deployment
 
